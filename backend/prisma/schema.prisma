@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum SubjectCategory {
+  NATURAL
+  SOCIAL
+}
+
+enum AnswerOption {
+  A
+  B
+  C
+  D
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  password  String
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  questionsCreated Question[]    @relation("TeacherQuestions")
+  notesCreated     Note[]        @relation("TeacherNotes")
+  mockExamsCreated MockExam[]    @relation("TeacherMockExams")
+  attempts         Attempt[]     @relation("StudentAttempts")
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model Subject {
+  id        String          @id @default(uuid())
+  name      String          @unique
+  category  SubjectCategory
+  createdAt DateTime        @default(now())
+
+  // Relations
+  questions Question[]
+  notes     Note[]
+  mockExams MockExam[]
+
+  @@index([category])
+  @@map("subjects")
+}
+
+model Question {
+  id            String       @id @default(uuid())
+  teacherId     String
+  subjectId     String
+  question      String       @db.Text
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctAnswer AnswerOption
+  explanation   String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  teacher         User              @relation("TeacherQuestions", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject         Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  mockExamLinks   MockExamQuestion[]
+  attemptAnswers  AttemptAnswer[]
+
+  @@index([teacherId])
+  @@index([subjectId])
+  @@map("questions")
+}
+
+model Note {
+  id          String   @id @default(uuid())
+  teacherId   String
+  subjectId   String
+  title       String
+  description String?  @db.Text
+  pdfFile     String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  teacher Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation("TeacherNotes", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId])
+  @@index([subjectId])
+  @@map("notes")
+}
+
+model MockExam {
+  id                String   @id @default(uuid())
+  title             String
+  subjectId         String
+  durationMinutes   Int
+  numberOfQuestions Int
+  teacherId         String
+  createdAt         DateTime @default(now())
+
+  // Relations
+  subject   Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   User              @relation("TeacherMockExams", fields: [teacherId], references: [id], onDelete: Cascade)
+  questions MockExamQuestion[]
+  attempts  Attempt[]
+
+  @@index([subjectId])
+  @@index([teacherId])
+  @@map("mock_exams")
+}
+
+model MockExamQuestion {
+  mockExamId String
+  questionId String
+
+  mockExam MockExam @relation(fields: [mockExamId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([mockExamId, questionId])
+  @@map("mock_exam_questions")
+}
+
+model Attempt {
+  id             String    @id @default(uuid())
+  studentId      String
+  mockExamId     String
+  score          Float
+  correctAnswers Int
+  totalQuestions Int
+  startedAt      DateTime  @default(now())
+  submittedAt    DateTime?
+  durationTaken  Int?      // seconds taken
+
+  // Relations
+  student  User            @relation("StudentAttempts", fields: [studentId], references: [id], onDelete: Cascade)
+  mockExam MockExam        @relation(fields: [mockExamId], references: [id], onDelete: Cascade)
+  answers  AttemptAnswer[]
+
+  @@index([studentId])
+  @@index([mockExamId])
+  @@index([studentId, mockExamId])
+  @@map("attempts")
+}
+
+model AttemptAnswer {
+  id             String       @id @default(uuid())
+  attemptId      String
+  questionId     String
+  selectedAnswer AnswerOption?
+  correctAnswer  AnswerOption
+  isCorrect      Boolean
+
+  // Relations
+  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@map("attempt_answers")
+}
