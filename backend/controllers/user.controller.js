@@ -27,7 +27,8 @@ const getStats = async (req, res, next) => {
  * GET /api/students?page=1&limit=10&search=
  * GET /api/teachers?page=1&limit=10&search=
  */
-const getUsersByRole = async (role) => async (req, res, next) => {
+//const getUsersByRole = async (role) => async (req, res, next) => {  changed 
+  const getUsersByRole = (role) => async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));

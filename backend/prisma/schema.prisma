@@ -101,8 +101,8 @@ model Note {
   createdAt   DateTime @default(now())
 
   // Relations
-  teacher Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  uploadedBy User  @relation("TeacherNotes", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject    Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation("TeacherNotes", fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([teacherId])
   @@index([subjectId])
