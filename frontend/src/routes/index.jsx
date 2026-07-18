@@ -2,13 +2,17 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 
-// Auth pages (stub — replaced in Phase 2)
+// Auth pages
 import AdminLoginPage from '@/pages/auth/AdminLoginPage'
 import TeacherLoginPage from '@/pages/auth/TeacherLoginPage'
 import StudentLoginPage from '@/pages/auth/StudentLoginPage'
 
-// Dashboard stubs
+// Admin pages
 import AdminDashboard from '@/pages/admin/AdminDashboard'
+import AdminStudentsPage from '@/pages/admin/AdminStudentsPage'
+import AdminTeachersPage from '@/pages/admin/AdminTeachersPage'
+
+// Teacher / Student dashboard stubs
 import TeacherDashboard from '@/pages/teacher/TeacherDashboard'
 import StudentDashboard from '@/pages/student/StudentDashboard'
 
@@ -17,12 +21,11 @@ import AdminLayout from '@/layouts/AdminLayout'
 import TeacherLayout from '@/layouts/TeacherLayout'
 import StudentLayout from '@/layouts/StudentLayout'
 
-// Public landing (stub — replaced in Phase 2)
+// Public landing
 import LandingPage from '@/pages/public/LandingPage'
 
 /**
- * Root router — redirects authenticated users to their dashboard,
- * all other routes protected by role.
+ * RootRedirect — shows landing page for guests, dashboard redirect for authenticated users.
  */
 function RootRedirect() {
   const { user, loading } = useAuth()
@@ -42,13 +45,13 @@ function RootRedirect() {
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
+      {/* ── Public ─────────────────────────────────────────────────────── */}
       <Route path="/" element={<RootRedirect />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/teacher/login" element={<TeacherLoginPage />} />
       <Route path="/student/login" element={<StudentLoginPage />} />
 
-      {/* Admin — protected */}
+      {/* ── Admin — protected ───────────────────────────────────────────── */}
       <Route
         path="/admin"
         element={
@@ -59,9 +62,11 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="students" element={<AdminStudentsPage />} />
+        <Route path="teachers" element={<AdminTeachersPage />} />
       </Route>
 
-      {/* Teacher — protected */}
+      {/* ── Teacher — protected ─────────────────────────────────────────── */}
       <Route
         path="/teacher"
         element={
@@ -74,7 +79,7 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<TeacherDashboard />} />
       </Route>
 
-      {/* Student — protected */}
+      {/* ── Student — protected ─────────────────────────────────────────── */}
       <Route
         path="/student"
         element={
@@ -87,7 +92,7 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<StudentDashboard />} />
       </Route>
 
-      {/* Catch-all */}
+      {/* ── Catch-all ───────────────────────────────────────────────────── */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
