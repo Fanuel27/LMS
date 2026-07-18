@@ -3,66 +3,49 @@
 ## ✅ Phase 1: Backend Foundation — COMPLETE
 ## ✅ Phase 2: Public Landing Page — COMPLETE
 ## ✅ Phase 3A: Admin Dashboard — COMPLETE
+## ✅ Phase 3B: Admin Student Management — COMPLETE
 
-**Phase 3A Completed & Bug-Fixed:** 2026-07-18  
+**Phase 3B Completed:** 2026-07-18  
 **Build status:** ✅ Zero errors (`npm run build` passes cleanly)  
-**Status:** All Phase 3A requirements implemented and verified. Awaiting Phase 3B approval.
+**Status:** All Phase 3B requirements implemented. Awaiting Phase 3C approval.
 
 ---
 
-## Phase 3A — Complete Inventory
+## Phase 3B — What Was Built
 
-### Reusable Admin Components
+### Only file modified
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `src/components/admin/StatCard.jsx` | Metric tile with skeleton, trend, click | ✅ |
-| `src/components/admin/PageHeader.jsx` | Breadcrumbs + title + actions slot | ✅ |
-| `src/components/admin/LoadingSkeleton.jsx` | LoadingSkeleton, TableSkeleton, CardGridSkeleton | ✅ |
-| `src/components/admin/EmptyState.jsx` | Empty state with icon + CTA | ✅ |
-| `src/components/admin/ErrorBanner.jsx` | Inline error + Retry button | ✅ |
-| `src/components/admin/ConfirmDialog.jsx` | Promise-based confirm modal + useConfirm hook | ✅ |
+| File | Changes |
+|------|---------|
+| `src/pages/admin/AdminStudentsPage.jsx` | Full rewrite adding all missing features |
 
-### Admin Layout
+### Features Added in Phase 3B
 
-| File | Features | Status |
-|------|---------|--------|
-| `src/layouts/AdminLayout.jsx` | Grouped sidebar nav, user dropdown with initials, notification bell, mobile overlay, sticky top bar, active nav highlighting | ✅ |
+| Feature | Implementation |
+|---------|---------------|
+| **Activate / Deactivate student** | Toggle button (UserCheck/UserX icon) in each row → confirm dialog → `PUT /students/:id` with `{ isActive: bool }` |
+| **Reset Password modal** | KeyRound button per row → modal with strength-validated input → `PUT /admin/users/:id/reset-password` |
+| **Column sorting** | Client-side sort by Name (A→Z / Z→A) and Joined date (newest/oldest) with animated arrow icons |
+| **Password validation fixed** | Frontend regex now matches backend: 8+ chars, uppercase, lowercase, number |
+| **Confirm dialog for toggle** | Deactivate shows destructive variant; Activate shows default variant |
 
-### Admin Pages
-
-| File | Features | Status |
-|------|---------|--------|
-| `src/pages/admin/AdminDashboard.jsx` | Welcome, 6 stat cards, Quick Actions, System Overview, Recent Activity | ✅ |
-| `src/pages/admin/AdminStudentsPage.jsx` | Paginated table, search, add/edit modal, delete confirm, CRUD wired to API | ✅ |
-| `src/pages/admin/AdminTeachersPage.jsx` | Paginated table, search, add/edit modal, delete confirm, CRUD wired to API | ✅ |
-
-### Router
-
-| File | Changes | Status |
-|------|---------|--------|
-| `src/routes/index.jsx` | Added `/admin/students` + `/admin/teachers` as protected child routes | ✅ |
-
----
-
-## Bug Fixes Applied (this session)
-
-| Bug | Fix |
-|-----|-----|
-| `keepPreviousData: true` (TanStack Query v4 API) in both Students and Teachers pages | Replaced with `placeholderData: keepPreviousData` (v5 correct API) |
-| Unused `menuOpen` state in `StudentRow` | Removed |
-| Unused `RefreshCcw`, `MoreVertical` imports in `AdminStudentsPage.jsx` | Removed |
-
----
-
-## Backend — No Changes Required
+### Backend — No Changes
 
 All required APIs existed from Phase 1:
-- `GET /api/admin/stats` — 6 platform metrics
-- `GET/POST /api/students` — list + create
-- `PUT/DELETE /api/students/:id` — update + delete
-- `GET/POST /api/teachers` — list + create
-- `PUT/DELETE /api/teachers/:id` — update + delete
+- `PUT /students/:id` — accepts `{ isActive }` for toggle (via `updateUserSchema`)
+- `PUT /admin/users/:id/reset-password` — resets password with `{ newPassword }`
+- `userService.resetPassword()` — already in `user.service.js`
+
+---
+
+## Phase 3C — NOT Started
+
+Awaiting user approval before starting Phase 3C.
+
+### Phase 3C Planned Scope (for reference only)
+- Complete Admin Teacher Management (same features as students: toggle, reset pw, sort)
+- Teacher dashboard: question bank, study notes upload, mock exam creation
+- Student dashboard: practice questions, mock exam flow, progress analytics
 
 ---
 
@@ -70,26 +53,22 @@ All required APIs existed from Phase 1:
 
 ```bash
 # Terminal 1 — Backend
-cd c:\LMS\backend
-npm run dev          # starts on http://localhost:3001
+cd c:\LMS\backend && npm run dev   # http://localhost:3001
 
 # Terminal 2 — Frontend
-cd c:\LMS\frontend
-npm run dev          # starts on http://localhost:5173
+cd c:\LMS\frontend && npm run dev  # http://localhost:5173
 ```
 
-### Seed credentials (from prisma/seed.js)
-Check `c:\LMS\backend\prisma\seed.js` for login credentials.
-Admin email is typically: `admin@examprep.et` / `Admin123!`
-
----
-
-## Phase 3B — NOT Started
-
-Awaiting explicit user approval before starting Phase 3B.
-
-### Phase 3B Planned Scope (for reference only)
-- Teacher dashboard: question bank, study notes upload, mock exam creation
-- Student dashboard: practice questions, mock exam flow, progress/analytics
-- Admin subjects management page
-- Admin reset-password UI
+### Test Checklist
+1. Login as admin at `/admin/login`
+2. Navigate to `/admin/students`
+3. Add student → verify created in table
+4. Edit student → verify name/email updated
+5. Click UserX icon → confirm deactivate → badge turns Inactive
+6. Click UserCheck icon → confirm activate → badge turns Active
+7. Click KeyRound icon → enter new password → verify success toast
+8. Click Trash icon → confirm delete → row removed
+9. Sort by Name column (A→Z, Z→A)
+10. Sort by Joined column (newest/oldest)
+11. Search by name or email
+12. Verify pagination appears with 11+ students
