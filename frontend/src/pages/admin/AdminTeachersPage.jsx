@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import {
   Users, Plus, Search, Pencil, Trash2,
-  CheckCircle2, XCircle, Eye, EyeOff
+  CheckCircle2, XCircle, Eye, EyeOff, KeyRound,
+  UserCheck, UserX, ArrowUpDown, ArrowUp, ArrowDown,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { userService } from '@/services/user.service'
@@ -21,16 +22,47 @@ import { useConfirm } from '@/components/admin/ConfirmDialog'
 import { cn } from '@/lib/utils'
 
 const BREADCRUMBS = [{ label: 'Dashboard', href: '/admin/dashboard' }]
+const LIMIT = 10
 
-// ─── Teacher Form Modal ───────────────────────────────────────────────────────
+// Password strength — matches backend regex exactly
+const PW_PATTERN = {
+  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+  message: 'Must be 8+ chars with uppercase, lowercase, and a number.',
+}
+
+// ─── Sorting helpers ──────────────────────────────────────────────────────────
+
+function SortIcon({ field, sortField, sortDir }) {
+  if (sortField !== field) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />
+  return sortDir === 'asc'
+    ? <ArrowUp className="w-3 h-3 ml-1 text-primary" />
+    : <ArrowDown className="w-3 h-3 ml-1 text-primary" />
+}
+
+function SortableTh({ label, field, sortField, sortDir, onSort, className }) {
+  return (
+    <th
+      className={cn(
+        'px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer select-none hover:text-foreground transition-colors',
+        className
+      )}
+      onClick={() => onSort(field)}
+    >
+      <span className="inline-flex items-center">
+        {label}
+        <SortIcon field={field} sortField={sortField} sortDir={sortDir} />
+      </span>
+    </th>
+  )
+}
+
+// ─── Teacher Form Modal (Create / Edit) ───────────────────────────────────────
 
 function TeacherModal({ open, onClose, initial, onSave, isSaving }) {
   const isEdit = !!initial
   const [showPw, setShowPw] = useState(false)
 
-  const {
-    register, handleSubmit, reset, formState: { errors },
-  } = useForm({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: initial
       ? { fullName: initial.fullName, email: initial.email }
       : {},
@@ -43,35 +75,32 @@ function TeacherModal({ open, onClose, initial, onSave, isSaving }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} aria-hidden="true" />
       <div
         className="relative z-10 bg-card border border-border rounded-2xl shadow-xl w-full max-w-md p-6"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="teacher-modal-title"
+        role="dialog" aria-modal="true" aria-labelledby="teacher-modal-title"
       >
         <h2 id="teacher-modal-title" className="text-lg font-semibold text-foreground mb-5">
           {isEdit ? 'Edit Teacher' : 'Add New Teacher'}
         </h2>
 
         <form id="teacher-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          {/* Full Name */}
           <div className="space-y-1.5">
             <Label htmlFor="t-fullName">Full Name</Label>
             <Input
               id="t-fullName"
               placeholder="Tigist Haile"
               disabled={isSaving}
-              {...register('fullName', { required: 'Full name is required.' })}
+              {...register('fullName', {
+                required: 'Full name is required.',
+                minLength: { value: 2, message: 'Full name must be at least 2 characters.' },
+              })}
             />
-            {errors.fullName && (
-              <p className="text-xs text-destructive">{errors.fullName.message}</p>
-            )}
+            {errors.fullName && <p className="text-xs text-destructive">{errors.fullName.message}</p>}
           </div>
 
+          {/* Email */}
           <div className="space-y-1.5">
             <Label htmlFor="t-email">Email Address</Label>
             <Input
@@ -81,14 +110,13 @@ function TeacherModal({ open, onClose, initial, onSave, isSaving }) {
               disabled={isSaving}
               {...register('email', {
                 required: 'Email is required.',
-                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email.' },
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email address.' },
               })}
             />
-            {errors.email && (
-              <p className="text-xs text-destructive">{errors.email.message}</p>
-            )}
+            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
           </div>
 
+          {/* Password — create only */}
           {!isEdit && (
             <div className="space-y-1.5">
               <Label htmlFor="t-password">Password</Label>
@@ -96,12 +124,12 @@ function TeacherModal({ open, onClose, initial, onSave, isSaving }) {
                 <Input
                   id="t-password"
                   type={showPw ? 'text' : 'password'}
-                  placeholder="Minimum 8 characters"
+                  placeholder="Min 8 chars, upper + lower + number"
                   disabled={isSaving}
                   className="pr-10"
                   {...register('password', {
                     required: 'Password is required.',
-                    minLength: { value: 8, message: 'At least 8 characters.' },
+                    pattern: PW_PATTERN,
                   })}
                 />
                 <button
@@ -113,16 +141,12 @@ function TeacherModal({ open, onClose, initial, onSave, isSaving }) {
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-xs text-destructive">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
-              Cancel
-            </Button>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>Cancel</Button>
             <Button id="teacher-save-btn" type="submit" disabled={isSaving}>
               {isSaving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Teacher'}
             </Button>
@@ -133,11 +157,82 @@ function TeacherModal({ open, onClose, initial, onSave, isSaving }) {
   )
 }
 
-// ─── Teacher Row ──────────────────────────────────────────────────────────────
+// ─── Reset Password Modal ─────────────────────────────────────────────────────
 
-function TeacherRow({ teacher, onEdit, onDelete }) {
+function ResetPasswordModal({ open, teacher, onClose, onSave, isSaving }) {
+  const [showPw, setShowPw] = useState(false)
+  const { register, handleSubmit, reset, formState: { errors } } = useForm()
+
+  if (!open || !teacher) return null
+
+  const onSubmit = (data) => { onSave(data.newPassword); reset() }
+  const handleClose = () => { reset(); onClose() }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} aria-hidden="true" />
+      <div
+        className="relative z-10 bg-card border border-border rounded-2xl shadow-xl w-full max-w-md p-6"
+        role="dialog" aria-modal="true" aria-labelledby="t-reset-pw-title"
+      >
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+            <KeyRound className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <h2 id="t-reset-pw-title" className="text-lg font-semibold text-foreground">Reset Password</h2>
+            <p className="text-xs text-muted-foreground truncate">{teacher.fullName}</p>
+          </div>
+        </div>
+
+        <form id="t-reset-pw-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <div className="space-y-1.5">
+            <Label htmlFor="t-rp-newPassword">New Password</Label>
+            <div className="relative">
+              <Input
+                id="t-rp-newPassword"
+                type={showPw ? 'text' : 'password'}
+                placeholder="Min 8 chars, upper + lower + number"
+                disabled={isSaving}
+                className="pr-10"
+                {...register('newPassword', {
+                  required: 'New password is required.',
+                  pattern: PW_PATTERN,
+                })}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowPw((p) => !p)}
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+              >
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.newPassword && <p className="text-xs text-destructive">{errors.newPassword.message}</p>}
+            <p className="text-xs text-muted-foreground">
+              This will immediately change the teacher's login password.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>Cancel</Button>
+            <Button id="t-reset-pw-save-btn" type="submit" disabled={isSaving}>
+              {isSaving ? 'Resetting…' : 'Reset Password'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Teacher Table Row ────────────────────────────────────────────────────────
+
+function TeacherRow({ teacher, onEdit, onDelete, onToggleStatus, onResetPassword }) {
   return (
     <tr className="border-b border-border hover:bg-muted/40 transition-colors">
+      {/* Avatar + Name */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
@@ -146,7 +241,13 @@ function TeacherRow({ teacher, onEdit, onDelete }) {
           <span className="text-sm font-medium text-foreground">{teacher.fullName}</span>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell">{teacher.email}</td>
+
+      {/* Email */}
+      <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell">
+        {teacher.email}
+      </td>
+
+      {/* Status badge */}
       <td className="px-4 py-3 hidden md:table-cell">
         <Badge
           variant="outline"
@@ -161,30 +262,61 @@ function TeacherRow({ teacher, onEdit, onDelete }) {
           {teacher.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
+
+      {/* Joined */}
       <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">
         {new Date(teacher.createdAt).toLocaleDateString('en-GB', {
           day: '2-digit', month: 'short', year: 'numeric',
         })}
       </td>
+
+      {/* Actions */}
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-1">
+          {/* Edit */}
           <Button
             id={`edit-teacher-${teacher.id}`}
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
+            variant="ghost" size="icon" className="h-8 w-8"
             onClick={() => onEdit(teacher)}
             aria-label="Edit teacher"
+            title="Edit teacher"
           >
             <Pencil className="w-3.5 h-3.5" />
           </Button>
+
+          {/* Toggle active/inactive */}
+          <Button
+            id={`toggle-teacher-${teacher.id}`}
+            variant="ghost" size="icon" className="h-8 w-8"
+            onClick={() => onToggleStatus(teacher)}
+            aria-label={teacher.isActive ? 'Deactivate teacher' : 'Activate teacher'}
+            title={teacher.isActive ? 'Deactivate' : 'Activate'}
+          >
+            {teacher.isActive
+              ? <UserX className="w-3.5 h-3.5 text-amber-600" />
+              : <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+            }
+          </Button>
+
+          {/* Reset password */}
+          <Button
+            id={`reset-pw-teacher-${teacher.id}`}
+            variant="ghost" size="icon" className="h-8 w-8"
+            onClick={() => onResetPassword(teacher)}
+            aria-label="Reset password"
+            title="Reset password"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-muted-foreground" />
+          </Button>
+
+          {/* Delete */}
           <Button
             id={`delete-teacher-${teacher.id}`}
-            variant="ghost"
-            size="icon"
+            variant="ghost" size="icon"
             className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={() => onDelete(teacher)}
             aria-label="Delete teacher"
+            title="Delete teacher"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
@@ -192,6 +324,26 @@ function TeacherRow({ teacher, onEdit, onDelete }) {
       </td>
     </tr>
   )
+}
+
+// ─── Client-side sort ─────────────────────────────────────────────────────────
+
+function sortTeachers(teachers, field, dir) {
+  if (!field) return teachers
+  return [...teachers].sort((a, b) => {
+    let va = a[field] ?? ''
+    let vb = b[field] ?? ''
+    if (field === 'createdAt') {
+      va = new Date(va).getTime()
+      vb = new Date(vb).getTime()
+    } else {
+      va = va.toString().toLowerCase()
+      vb = vb.toString().toLowerCase()
+    }
+    if (va < vb) return dir === 'asc' ? -1 : 1
+    if (va > vb) return dir === 'asc' ? 1 : -1
+    return 0
+  })
 }
 
 // ─── AdminTeachersPage ────────────────────────────────────────────────────────
@@ -206,9 +358,11 @@ export default function AdminTeachersPage() {
   const [searchInput, setSearchInput] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [resetTarget, setResetTarget] = useState(null)
+  const [sortField, setSortField] = useState('createdAt')
+  const [sortDir, setSortDir] = useState('desc')
 
-  const LIMIT = 10
-
+  // ── Query ──────────────────────────────────────────────────────────────────
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin-teachers', page, search],
     queryFn: async () => {
@@ -219,10 +373,22 @@ export default function AdminTeachersPage() {
     staleTime: 15_000,
   })
 
-  const teachers = data?.data ?? []
+  const rawTeachers = data?.data ?? []
+  const teachers = sortTeachers(rawTeachers, sortField, sortDir)
   const total = data?.pagination?.total ?? 0
   const totalPages = Math.ceil(total / LIMIT)
 
+  // ── Sort toggle ────────────────────────────────────────────────────────────
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDir('asc')
+    }
+  }
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: (body) => userService.createTeacher(body),
     onSuccess: () => {
@@ -242,10 +408,12 @@ export default function AdminTeachersPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => userService.updateTeacher(id, data),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-teachers'] })
-      setModalOpen(false)
-      setEditing(null)
+      if (vars.closeModal !== false) {
+        setModalOpen(false)
+        setEditing(null)
+      }
       toast({ title: 'Teacher updated', description: 'Changes saved successfully.' })
     },
     onError: (err) => {
@@ -273,6 +441,22 @@ export default function AdminTeachersPage() {
     },
   })
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ id, newPassword }) => userService.resetPassword(id, newPassword),
+    onSuccess: () => {
+      setResetTarget(null)
+      toast({ title: 'Password reset', description: "The teacher's password has been updated." })
+    },
+    onError: (err) => {
+      toast({
+        title: 'Error',
+        description: err?.response?.data?.message || 'Failed to reset password.',
+        variant: 'destructive',
+      })
+    },
+  })
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleSearch = (e) => {
     e.preventDefault()
     setSearch(searchInput.trim())
@@ -293,11 +477,36 @@ export default function AdminTeachersPage() {
   const handleDelete = async (teacher) => {
     const confirmed = await confirm({
       title: 'Delete Teacher?',
-      description: `This will permanently remove "${teacher.fullName}" and all their content.`,
+      description: `This will permanently remove "${teacher.fullName}" and all their content. This action cannot be undone.`,
       confirmLabel: 'Delete',
       variant: 'destructive',
     })
     if (confirmed) deleteMutation.mutate(teacher.id)
+  }
+
+  const handleToggleStatus = async (teacher) => {
+    const isDeactivating = teacher.isActive
+    const confirmed = await confirm({
+      title: isDeactivating ? 'Deactivate Teacher?' : 'Activate Teacher?',
+      description: isDeactivating
+        ? `"${teacher.fullName}" will lose access to the platform immediately.`
+        : `"${teacher.fullName}" will regain full access to the platform.`,
+      confirmLabel: isDeactivating ? 'Deactivate' : 'Activate',
+      variant: isDeactivating ? 'destructive' : 'default',
+    })
+    if (confirmed) {
+      updateMutation.mutate({
+        id: teacher.id,
+        data: { isActive: !teacher.isActive },
+        closeModal: false,
+      })
+    }
+  }
+
+  const handleResetPassword = (teacher) => setResetTarget(teacher)
+
+  const handlePasswordSave = (newPassword) => {
+    resetPasswordMutation.mutate({ id: resetTarget.id, newPassword })
   }
 
   const isSaving = createMutation.isPending || updateMutation.isPending
@@ -318,7 +527,7 @@ export default function AdminTeachersPage() {
 
       {isError && <ErrorBanner message="Failed to load teachers." onRetry={refetch} />}
 
-      {/* Search */}
+      {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-2 max-w-sm">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -336,9 +545,7 @@ export default function AdminTeachersPage() {
         </Button>
         {search && (
           <Button
-            type="button"
-            variant="ghost"
-            size="icon"
+            type="button" variant="ghost" size="icon"
             onClick={() => { setSearch(''); setSearchInput(''); setPage(1) }}
             aria-label="Clear search"
           >
@@ -347,7 +554,7 @@ export default function AdminTeachersPage() {
         )}
       </form>
 
-      {/* Table */}
+      {/* Table card */}
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
@@ -358,7 +565,7 @@ export default function AdminTeachersPage() {
               title={search ? 'No teachers found' : 'No teachers yet'}
               description={
                 search
-                  ? `No results for "${search}".`
+                  ? `No results for "${search}". Try a different search term.`
                   : 'Add the first teacher to get started.'
               }
               action={
@@ -373,10 +580,10 @@ export default function AdminTeachersPage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-border bg-muted/40">
-                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teacher</th>
+                    <SortableTh label="Teacher" field="fullName" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Email</th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Status</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Joined</th>
+                    <SortableTh label="Joined" field="createdAt" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
@@ -387,6 +594,8 @@ export default function AdminTeachersPage() {
                       teacher={t}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
+                      onToggleStatus={handleToggleStatus}
+                      onResetPassword={handleResetPassword}
                     />
                   ))}
                 </tbody>
@@ -394,6 +603,7 @@ export default function AdminTeachersPage() {
             </div>
           )}
 
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-border">
               <p className="text-xs text-muted-foreground">
@@ -401,20 +611,14 @@ export default function AdminTeachersPage() {
               </p>
               <div className="flex gap-2">
                 <Button
-                  id="teachers-prev-page"
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage((p) => p - 1)}
+                  id="teachers-prev-page" variant="outline" size="sm"
+                  disabled={page === 1} onClick={() => setPage((p) => p - 1)}
                 >
                   Previous
                 </Button>
                 <Button
-                  id="teachers-next-page"
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => setPage((p) => p + 1)}
+                  id="teachers-next-page" variant="outline" size="sm"
+                  disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}
                 >
                   Next
                 </Button>
@@ -424,6 +628,7 @@ export default function AdminTeachersPage() {
         </CardContent>
       </Card>
 
+      {/* Create / Edit modal */}
       <TeacherModal
         open={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(null) }}
@@ -432,7 +637,18 @@ export default function AdminTeachersPage() {
         isSaving={isSaving}
       />
 
+      {/* Reset password modal */}
+      <ResetPasswordModal
+        open={!!resetTarget}
+        teacher={resetTarget}
+        onClose={() => setResetTarget(null)}
+        onSave={handlePasswordSave}
+        isSaving={resetPasswordMutation.isPending}
+      />
+
+      {/* Confirm dialog */}
       <ConfirmDialog />
+
       <Toaster toasts={toasts} />
     </div>
   )
