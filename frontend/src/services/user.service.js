@@ -26,3 +26,11 @@ export const userService = {
   changePassword: (currentPassword, newPassword) =>
     api.put('/profile/password', { currentPassword, newPassword }),
 }
+
+export const teacherService = {
+  // Teacher personal stats
+  getStats: () => api.get('/subjects/teacher/stats'),
+
+  // Subjects (accessible to teacher + admin)
+  getSubjects: (params) => api.get('/subjects', { params }),
+}

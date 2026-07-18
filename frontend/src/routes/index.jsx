@@ -14,6 +14,11 @@ import AdminTeachersPage from '@/pages/admin/AdminTeachersPage'
 
 // Teacher / Student dashboard stubs
 import TeacherDashboard from '@/pages/teacher/TeacherDashboard'
+import TeacherSubjectsPage from '@/pages/teacher/TeacherSubjectsPage'
+import TeacherQuestionsPage from '@/pages/teacher/TeacherQuestionsPage'
+import TeacherNotesPage from '@/pages/teacher/TeacherNotesPage'
+import TeacherMockExamsPage from '@/pages/teacher/TeacherMockExamsPage'
+import TeacherAnalyticsPage from '@/pages/teacher/TeacherAnalyticsPage'
 import StudentDashboard from '@/pages/student/StudentDashboard'
 
 // Layouts
@@ -77,6 +82,11 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<TeacherDashboard />} />
+        <Route path="subjects" element={<TeacherSubjectsPage />} />
+        <Route path="questions" element={<TeacherQuestionsPage />} />
+        <Route path="notes" element={<TeacherNotesPage />} />
+        <Route path="exams" element={<TeacherMockExamsPage />} />
+        <Route path="analytics" element={<TeacherAnalyticsPage />} />
       </Route>
 
       {/* ── Student — protected ─────────────────────────────────────────── */}

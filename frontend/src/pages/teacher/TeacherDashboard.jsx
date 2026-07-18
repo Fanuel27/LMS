@@ -1,110 +1,269 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import {
-  HelpCircle, FileText, ClipboardList, BarChart2, PlusCircle, TrendingUp
+  HelpCircle, FileText, ClipboardList, BarChart2,
+  TrendingUp, Users, Star, Activity, BookMarked,
+  Plus, ChevronRight,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { teacherService } from '@/services/user.service'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { CardGridSkeleton } from '@/components/admin/LoadingSkeleton'
+import { cn } from '@/lib/utils'
 
-/**
- * Phase 1 stub — Teacher Dashboard.
- * Shows a welcome message and links to future Phase 2 features.
- */
-const quickLinks = [
-  {
-    href: '/teacher/questions',
-    label: 'Question Bank',
-    description: 'Create and manage exam questions',
-    icon: HelpCircle,
-    color: 'bg-amber-100 text-amber-600',
-  },
-  {
-    href: '/teacher/notes',
-    label: 'Study Notes',
-    description: 'Upload and manage PDF notes',
-    icon: FileText,
-    color: 'bg-pink-100 text-pink-600',
-  },
-  {
-    href: '/teacher/exams',
-    label: 'Mock Exams',
-    description: 'Build and schedule mock exams',
-    icon: ClipboardList,
-    color: 'bg-teal-100 text-teal-600',
-  },
-  {
-    href: '/teacher/analytics',
-    label: 'Analytics',
-    description: 'View student performance data',
-    icon: BarChart2,
-    color: 'bg-violet-100 text-violet-600',
-  },
-]
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
+function StatCard({ title, value, icon: Icon, iconBg, iconColor, trend, loading, linkTo }) {
+  const inner = (
+    <Card className={cn('hover:shadow-md transition-shadow', linkTo && 'cursor-pointer group')}>
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+            {loading ? (
+              <div className="h-8 w-16 bg-muted animate-pulse rounded mt-2" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {value ?? '—'}
+              </p>
+            )}
+            {trend && !loading && (
+              <p className="text-xs text-muted-foreground mt-1">{trend}</p>
+            )}
+          </div>
+          <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
+            <Icon className={cn('w-5 h-5', iconColor)} />
+          </div>
+        </div>
+        {linkTo && (
+          <div className="mt-3 flex items-center gap-1 text-xs text-emerald-600 font-medium group-hover:gap-2 transition-all">
+            View all <ChevronRight className="w-3 h-3" />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+
+  return linkTo ? <Link to={linkTo}>{inner}</Link> : inner
+}
+
+// ─── Quick action card ────────────────────────────────────────────────────────
+
+function QuickAction({ to, icon: Icon, label, description, iconBg, iconColor }) {
+  return (
+    <Link to={to}>
+      <Card className="hover:bg-accent/40 hover:shadow-sm transition-all cursor-pointer h-full">
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
+            <Icon className={cn('w-5 h-5', iconColor)} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">{label}</p>
+            <p className="text-xs text-muted-foreground truncate">{description}</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto shrink-0" />
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
+
+// ─── TeacherDashboard ─────────────────────────────────────────────────────────
 
 export default function TeacherDashboard() {
   const { user } = useAuth()
 
+  const { data, isLoading } = useQuery({
+    queryKey: ['teacher-stats'],
+    queryFn: async () => {
+      const res = await teacherService.getStats()
+      return res.data.data
+    },
+    staleTime: 30_000,
+  })
+
+  const firstName = user?.fullName?.split(' ')[0] || 'Teacher'
+
+  const statCards = [
+    {
+      title: 'My Questions',
+      value: data?.questions ?? 0,
+      icon: HelpCircle,
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600',
+      trend: 'Questions in your bank',
+      linkTo: '/teacher/questions',
+    },
+    {
+      title: 'My Notes',
+      value: data?.notes ?? 0,
+      icon: FileText,
+      iconBg: 'bg-pink-100',
+      iconColor: 'text-pink-600',
+      trend: 'Uploaded study materials',
+      linkTo: '/teacher/notes',
+    },
+    {
+      title: 'My Mock Exams',
+      value: data?.mockExams ?? 0,
+      icon: ClipboardList,
+      iconBg: 'bg-teal-100',
+      iconColor: 'text-teal-600',
+      trend: 'Published mock exams',
+      linkTo: '/teacher/exams',
+    },
+    {
+      title: 'Avg. Student Score',
+      value: data?.avgScore != null ? `${data.avgScore}%` : '—',
+      icon: Star,
+      iconBg: 'bg-yellow-100',
+      iconColor: 'text-yellow-600',
+      trend: data?.totalAttempts ? `Across ${data.totalAttempts} attempts` : 'No attempts yet',
+    },
+    {
+      title: 'Students Practicing',
+      value: data?.studentsPracticing ?? 0,
+      icon: Users,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      trend: 'Unique students active',
+    },
+    {
+      title: 'Total Attempts',
+      value: data?.totalAttempts ?? 0,
+      icon: Activity,
+      iconBg: 'bg-violet-100',
+      iconColor: 'text-violet-600',
+      trend: 'Exam attempts on your content',
+      linkTo: '/teacher/analytics',
+    },
+  ]
+
+  const quickActions = [
+    {
+      to: '/teacher/subjects',
+      icon: BookMarked,
+      label: 'Browse Subjects',
+      description: 'View available subjects & categories',
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600',
+    },
+    {
+      to: '/teacher/questions',
+      icon: HelpCircle,
+      label: 'Question Bank',
+      description: 'Create and manage exam questions',
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600',
+    },
+    {
+      to: '/teacher/notes',
+      icon: FileText,
+      label: 'Study Notes',
+      description: 'Upload and manage PDF notes',
+      iconBg: 'bg-pink-100',
+      iconColor: 'text-pink-600',
+    },
+    {
+      to: '/teacher/exams',
+      icon: ClipboardList,
+      label: 'Mock Exams',
+      description: 'Build and schedule mock exams',
+      iconBg: 'bg-teal-100',
+      iconColor: 'text-teal-600',
+    },
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-7xl">
+      {/* Welcome header */}
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            Welcome back, {user?.fullName?.split(' ')[0]}
+            Good day, {firstName}! 👋
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Manage your questions, notes, and mock exams from here.
+          <p className="text-sm text-muted-foreground mt-1">
+            Here's an overview of your teaching content and student activity.
           </p>
         </div>
-        <Badge variant="outline" className="gap-1.5 text-xs border-emerald-200 text-emerald-700">
+        <Badge
+          variant="outline"
+          className="gap-1.5 text-xs border-emerald-200 text-emerald-700 bg-emerald-50 shrink-0"
+        >
           <TrendingUp className="w-3 h-3" />
-          Teacher
+          Active
         </Badge>
       </div>
 
-      {/* Getting started card */}
-      <Card className="border-dashed border-emerald-200 bg-emerald-50/30">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
-              <PlusCircle className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-foreground">Get started</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Use the navigation on the left to create questions, upload study notes, and build mock exams for your students.
-                Analytics will show you how students are performing.
-              </p>
-            </div>
+      {/* Stat cards */}
+      <section aria-label="Summary statistics">
+        {isLoading ? (
+          <CardGridSkeleton count={6} />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {statCards.map((card) => (
+              <StatCard key={card.title} {...card} loading={false} />
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </section>
 
-      {/* Quick links */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Quick Navigation</h2>
+      {/* Quick actions */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/teacher/subjects">
+              <Plus className="w-4 h-4" />
+              Browse Subjects
+            </Link>
+          </Button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {quickLinks.map(({ href, label, description, icon: Icon, color }) => (
-            <a key={href} href={href}>
-              <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{label}</p>
-                    <p className="text-xs text-muted-foreground">{description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </a>
+          {quickActions.map((action) => (
+            <QuickAction key={action.to} {...action} />
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Phase note */}
-      <p className="text-xs text-muted-foreground text-center pt-2">
-        Full functionality (question bank, notes, mock exams, analytics) will be available in Phase 2.
-      </p>
+      {/* Recent activity placeholder */}
+      <section>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
+        <Card>
+          <CardContent className="p-0">
+            {data?.totalAttempts === 0 || data == null ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center mb-3">
+                  <Activity className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium text-foreground">No activity yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Student attempts will appear here once they start practising.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                <div className="px-5 py-4 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                    <Users className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {data.studentsPracticing} student{data.studentsPracticing !== 1 ? 's' : ''} have practised
+                    </p>
+                    <p className="text-xs text-muted-foreground">{data.totalAttempts} total exam attempts</p>
+                  </div>
+                  <Badge variant="outline" className="ml-auto text-xs border-emerald-200 text-emerald-700">
+                    Avg {data.avgScore ?? 0}%
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   )
 }

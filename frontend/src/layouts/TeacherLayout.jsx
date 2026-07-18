@@ -1,15 +1,199 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { LayoutDashboard, HelpCircle, FileText, ClipboardList, BarChart2, LogOut, Menu, X, BookOpen } from 'lucide-react'
-import { useState } from 'react'
+import {
+  LayoutDashboard, HelpCircle, FileText, ClipboardList, BarChart2,
+  LogOut, Menu, X, BookOpen, ChevronDown, Settings, User, BookMarked,
+} from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { cn } from '@/lib/utils'
 
-const navItems = [
-  { to: '/teacher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/teacher/questions', label: 'Question Bank', icon: HelpCircle },
-  { to: '/teacher/notes', label: 'Study Notes', icon: FileText },
-  { to: '/teacher/exams', label: 'Mock Exams', icon: ClipboardList },
-  { to: '/teacher/analytics', label: 'Analytics', icon: BarChart2 },
+// ─── Navigation structure ─────────────────────────────────────────────────────
+
+const navGroups = [
+  {
+    label: 'Overview',
+    items: [
+      { to: '/teacher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Curriculum',
+    items: [
+      { to: '/teacher/subjects', label: 'Subjects', icon: BookMarked },
+      { to: '/teacher/questions', label: 'Question Bank', icon: HelpCircle },
+      { to: '/teacher/notes', label: 'Study Notes', icon: FileText },
+      { to: '/teacher/exams', label: 'Mock Exams', icon: ClipboardList },
+    ],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { to: '/teacher/analytics', label: 'Analytics', icon: BarChart2 },
+    ],
+  },
 ]
+
+// ─── User Dropdown ────────────────────────────────────────────────────────────
+
+function UserDropdown({ user, onLogout }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const initials = user?.fullName
+    ?.split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'T'
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        id="teacher-user-dropdown-toggle"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-accent transition-colors"
+        onClick={() => setOpen((p) => !p)}
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+          {initials}
+        </div>
+        <span className="hidden sm:block text-sm font-medium text-foreground max-w-[120px] truncate">
+          {user?.fullName}
+        </span>
+        <ChevronDown className={cn('w-3.5 h-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 w-56 bg-popover border border-border rounded-xl shadow-lg z-50 py-1 overflow-hidden"
+          role="menu"
+        >
+          {/* User info */}
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-sm font-semibold text-foreground truncate">{user?.fullName}</p>
+            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+            <span className="mt-1 inline-block text-xs font-medium bg-emerald-600/10 text-emerald-700 px-2 py-0.5 rounded-full">
+              Teacher
+            </span>
+          </div>
+
+          {/* Menu items */}
+          <div className="py-1">
+            <button
+              role="menuitem"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              <User className="w-4 h-4 text-muted-foreground" />
+              Profile
+            </button>
+            <button
+              role="menuitem"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              <Settings className="w-4 h-4 text-muted-foreground" />
+              Settings
+            </button>
+          </div>
+
+          <div className="border-t border-border py-1">
+            <button
+              id="teacher-logout-btn"
+              role="menuitem"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+              onClick={() => { setOpen(false); onLogout() }}
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+function Sidebar({ open, onClose }) {
+  return (
+    <aside
+      className={cn(
+        'fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col',
+        'transform transition-transform duration-200 ease-in-out',
+        open ? 'translate-x-0' : '-translate-x-full',
+        'lg:relative lg:translate-x-0'
+      )}
+    >
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-border shrink-0">
+        <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
+          <BookOpen className="w-4 h-4 text-white" />
+        </div>
+        <div className="min-w-0">
+          <p className="font-semibold text-sm text-foreground leading-tight">Exam Prep Ethiopia</p>
+          <p className="text-xs text-muted-foreground">Teacher Portal</p>
+        </div>
+      </div>
+
+      {/* Nav groups */}
+      <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <p className="px-3 mb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+              {group.label}
+            </p>
+            <ul className="space-y-0.5">
+              {group.items.map(({ to, label, icon: Icon }) => (
+                <li key={to}>
+                  <NavLink
+                    to={to}
+                    end
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      )
+                    }
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="px-3 py-3 border-t border-border shrink-0">
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <BookOpen className="w-4 h-4" />
+          View Landing Page
+        </Link>
+      </div>
+    </aside>
+  )
+}
+
+// ─── TeacherLayout ────────────────────────────────────────────────────────────
 
 export default function TeacherLayout() {
   const { user, logout } = useAuth()
@@ -18,79 +202,50 @@ export default function TeacherLayout() {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/teacher/login')
+    navigate('/teacher/login', { replace: true })
   }
 
   return (
     <div className="min-h-screen flex bg-background">
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col
-        transform transition-transform duration-200 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:relative lg:translate-x-0
-      `}>
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
-          <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm text-foreground">Exam Prep Ethiopia</p>
-            <p className="text-xs text-muted-foreground">Teacher Portal</p>
-          </div>
-        </div>
+      {/* Sidebar */}
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                ${isActive
-                  ? 'bg-emerald-600 text-white'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                }`
-              }
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="px-3 py-4 border-t border-border">
-          <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-              <span className="text-emerald-700 text-xs font-bold">
-                {user?.fullName?.charAt(0)?.toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.fullName}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
-        </div>
-      </aside>
-
+      {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
       )}
 
+      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-border bg-card flex items-center px-4 gap-4">
-          <button className="lg:hidden p-2 rounded-lg hover:bg-accent" onClick={() => setSidebarOpen(!sidebarOpen)}>
+        {/* Top nav */}
+        <header className="h-16 sticky top-0 z-30 bg-card border-b border-border flex items-center px-4 gap-4 shrink-0">
+          {/* Mobile hamburger */}
+          <button
+            id="teacher-sidebar-toggle"
+            className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors"
+            onClick={() => setSidebarOpen((p) => !p)}
+            aria-label="Toggle sidebar"
+          >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <span className="text-sm text-muted-foreground">National Exam Prep Ethiopia</span>
+
+          {/* Breadcrumb context */}
+          <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
+            <BookOpen className="w-4 h-4 text-emerald-600" />
+            <span>National Exam Prep Ethiopia</span>
+          </div>
+
+          <div className="flex-1" />
+
+          {/* User dropdown */}
+          <UserDropdown user={user} onLogout={handleLogout} />
         </header>
+
+        {/* Page content */}
         <main className="flex-1 p-6 overflow-auto">
           <Outlet />
         </main>
