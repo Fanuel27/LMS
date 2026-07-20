@@ -6,6 +6,11 @@ const { requireRole } = require('../middleware/role.middleware');
 
 const studentOnly = [authenticate, requireRole('STUDENT')];
 
-router.get('/stats', ...studentOnly, studentController.getStats);
+router.use(studentOnly);
+
+router.get('/stats', studentController.getStats);
+router.get('/subjects', studentController.getSubjects);
+router.get('/notes', studentController.getNotes);
+router.get('/notes/:id/download', studentController.downloadNotePdf);
 
 module.exports = router;
