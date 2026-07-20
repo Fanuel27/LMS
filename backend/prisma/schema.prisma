@@ -116,6 +116,9 @@ model MockExam {
   durationMinutes   Int
   numberOfQuestions Int
   teacherId         String
+  description       String?  @db.Text
+  passingScore      Float    @default(50)
+  isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
 
   // Relations
