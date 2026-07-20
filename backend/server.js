@@ -12,8 +12,9 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const subjectRoutes = require('./routes/subject.routes');
 const questionRoutes = require('./routes/question.routes');
-const noteRoutes = require('./routes/note.routes');
 const mockExamRoutes = require('./routes/mockExam.routes');
+const studentRoutes = require('./routes/student.routes');
+const noteRoutes = require('./routes/note.routes');
 const { errorHandler, notFoundHandler } = require('./middleware/error.middleware');
 
 const app = express();
@@ -84,6 +85,7 @@ app.use('/api/subjects', subjectRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/mock-exams', mockExamRoutes);
+app.use('/api/student', studentRoutes);
 
 // ─── Error Handling (must be last) ────────────────────────────────────────────
 app.use(notFoundHandler);

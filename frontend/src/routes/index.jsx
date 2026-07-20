@@ -20,6 +20,12 @@ import TeacherNotesPage from '@/pages/teacher/TeacherNotesPage'
 import TeacherMockExamsPage from '@/pages/teacher/TeacherMockExamsPage'
 import TeacherAnalyticsPage from '@/pages/teacher/TeacherAnalyticsPage'
 import StudentDashboard from '@/pages/student/StudentDashboard'
+import StudentSubjectsPage from '@/pages/student/StudentSubjectsPage'
+import StudentPracticePage from '@/pages/student/StudentPracticePage'
+import StudentNotesPage from '@/pages/student/StudentNotesPage'
+import StudentExamsPage from '@/pages/student/StudentExamsPage'
+import StudentProgressPage from '@/pages/student/StudentProgressPage'
+import StudentProfilePage from '@/pages/student/StudentProfilePage'
 
 // Layouts
 import AdminLayout from '@/layouts/AdminLayout'
@@ -100,6 +106,12 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<StudentDashboard />} />
+        <Route path="subjects" element={<StudentSubjectsPage />} />
+        <Route path="practice" element={<StudentPracticePage />} />
+        <Route path="notes" element={<StudentNotesPage />} />
+        <Route path="exams" element={<StudentExamsPage />} />
+        <Route path="progress" element={<StudentProgressPage />} />
+        <Route path="profile" element={<StudentProfilePage />} />
       </Route>
 
       {/* ── Catch-all ───────────────────────────────────────────────────── */}
