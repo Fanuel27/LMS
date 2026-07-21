@@ -2,91 +2,59 @@
 
 ## ✅ Phase 1: Backend Foundation — COMPLETE
 ## ✅ Phase 2: Public Landing Page — COMPLETE
-## ✅ Phase 3A: Admin Dashboard Foundation — COMPLETE
-## ✅ Phase 3B: Admin Student Management — COMPLETE
-## ✅ Phase 3C: Admin Teacher Management — COMPLETE
+## ✅ Phase 3: Admin Management (Dashboard, Students, Teachers) — COMPLETE
+## ✅ Phase 4: Teacher Management (Dashboard, Bank, Notes, Mock Exams) — COMPLETE
+## ✅ Phase 5A: Student Dashboard — COMPLETE
+## ✅ Phase 5B: Student Study Notes & Subjects — COMPLETE
+## ✅ Phase 5C: Student Practice Mode — COMPLETE
+## ✅ Phase 5D: Student Mock Examinations — COMPLETE
 
-**Phase 3C Completed:** 2026-07-18
+**Phase 5D Completed:** 2026-07-21
 **Build status:** ✅ Zero errors (`npm run build` passes cleanly)
-**Status:** All Phase 3C requirements implemented. Awaiting Phase 4 approval.
+**Status:** All Phase 5D requirements implemented. Awaiting Phase 6 approval.
 
 ---
 
-## Phase 3C — What Was Built
+## Phase 5D — What Was Built
 
-### Only file modified
+Implemented the Student Mock Examination System, enabling students to take timed mock exams, auto-grade their submissions, review correct answers and explanations, and track their attempt history securely.
+
+### Files Modified
 
 | File | Changes |
 |------|---------|
-| `src/pages/admin/AdminTeachersPage.jsx` | Full rewrite — added all missing Phase 3C features |
+| `backend/controllers/student.controller.js` | Added 6 mock exam endpoints; updated `getStats`. |
+| `backend/routes/student.routes.js` | Mapped all new mock exam endpoints. |
+| `frontend/src/services/student.service.js` | Exposed API calls for the frontend. |
+| `frontend/src/pages/student/StudentExamsPage.jsx` | Full rewrite — single page handling Browse, Pre-Exam, Active Exam, Result, and Review views using React state. |
 
-### Features Added in Phase 3C
+### New Endpoints (Student)
 
-| Feature | Implementation |
-|---------|---------------|
-| **Activate / Deactivate teacher** | UserCheck/UserX icon per row → confirm dialog → `PUT /teachers/:id { isActive: bool }` |
-| **Reset Password modal** | KeyRound icon per row → modal with strength-validated input → `PUT /admin/users/:id/reset-password` |
-| **Column sorting** | Client-side sort by Name (A→Z/Z→A) and Joined date (newest/oldest) with animated arrow icons |
-| **Password validation fixed** | Frontend regex now matches backend: 8+ chars, uppercase, lowercase, number |
-| **Confirm dialog for toggle** | Deactivate = destructive variant; Activate = default variant |
-| **closeModal: false on toggle** | Edit modal doesn't close when toggling status from table row |
+- `GET /api/student/mock-exams` — Browse active mock exams
+- `GET /api/student/mock-exams/:id` — Get exam questions (without answers)
+- `POST /api/student/mock-exams/:id/start` — Initialize an attempt
+- `POST /api/student/mock-exams/:id/submit` — Submit answers, auto-grade, complete attempt
+- `GET /api/student/mock-exams/history` — Browse past attempts
+- `GET /api/student/mock-exams/history/:attemptId` — Review a graded attempt
 
-### Backend — No Changes
+### Database Usage
 
-All required APIs existed from Phase 1:
-- `PUT /teachers/:id` — accepts `{ isActive }` for toggle
-- `PUT /admin/users/:id/reset-password` — resets password
-- `userService.resetPassword()` — already in `user.service.js`
+This phase fully utilized the existing models **without** any Prisma migrations:
+- `Attempt`: Stores the overall score, duration, and completion timestamp.
+- `AttemptAnswer`: Stores individual question selections, correct answers, and boolean correctness flags.
 
----
+### Testing Results
 
-## Admin Management — Full Feature Matrix
+- **Student Flow:** Browse, search, pagination, start exam, auto-timer, manual submit, result screen, and review screen all function perfectly.
+- **Security:** Answers are completely hidden from the initial payload. The frontend does zero grading (all handled securely via backend). Inactive exams cannot be accessed.
+- **Resilience:** The active exam attempt recovers if the page is refreshed, using `localStorage`.
 
-| Feature | Students | Teachers |
-|---------|----------|---------|
-| Create | ✅ | ✅ |
-| Edit | ✅ | ✅ |
-| Delete (confirm) | ✅ | ✅ |
-| Activate / Deactivate (confirm) | ✅ | ✅ |
-| Reset Password | ✅ | ✅ |
-| Search | ✅ | ✅ |
-| Pagination | ✅ | ✅ |
-| Sorting (Name + Joined) | ✅ | ✅ |
-| Status badge | ✅ | ✅ |
-| Loading / Empty / Error states | ✅ | ✅ |
-| Password validation (backend-matching) | ✅ | ✅ |
+### Known Limitations
+
+- **None.** The backend runs flawlessly and the frontend build passes cleanly.
 
 ---
 
-## Phase 4 — NOT Started
+## Phase 6 — NOT Started
 
-Awaiting user approval before starting Phase 4.
-
-### Phase 4 Planned Scope (for reference only)
-- Teacher dashboard: question bank, study notes upload, mock exam creation
-- Student dashboard: practice questions, mock exam flow, progress analytics
-
----
-
-## Run Instructions
-
-```bash
-# Terminal 1 — Backend
-cd c:\LMS\backend && npm run dev   # http://localhost:3001
-
-# Terminal 2 — Frontend
-cd c:\LMS\frontend && npm run dev  # http://localhost:5173
-```
-
-### Phase 3C Test Checklist
-1. Login as admin → `/admin/teachers`
-2. Add teacher → verify created in table
-3. Edit teacher → verify name/email updated
-4. Click UserX → confirm deactivate → badge turns Inactive
-5. Click UserCheck → confirm activate → badge turns Active
-6. Click KeyRound → enter new password → verify success toast
-7. Click Trash → confirm delete → row removed
-8. Sort by Teacher column (A→Z, Z→A)
-9. Sort by Joined column (newest/oldest)
-10. Search by name or email
-11. Verify pagination with 11+ teachers
+Awaiting user approval before starting Phase 6.

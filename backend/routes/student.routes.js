@@ -19,4 +19,11 @@ router.post('/practice/session/:id/finish', studentController.finishPracticeSess
 router.get('/practice/sessions', studentController.getPracticeSessions);
 router.get('/practice/progress', studentController.getPracticeProgress);
 
+router.get('/mock-exams', studentController.getMockExams);
+router.get('/mock-exams/history', studentController.getMockExamHistory);
+router.get('/mock-exams/history/:attemptId', studentController.getMockExamHistoryDetails);
+router.get('/mock-exams/:id', studentController.getMockExamDetails);
+router.post('/mock-exams/:id/start', studentController.startMockExam);
+router.post('/mock-exams/:id/submit', studentController.submitMockExam);
+
 module.exports = router;

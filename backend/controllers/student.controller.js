@@ -57,6 +57,10 @@ exports.getStats = async (req, res, next) => {
         mockExamsTaken: uniqueExamsTaken,
         avgScore: parseFloat(avgScore.toFixed(2)),
         bestScore: parseFloat(bestScore.toFixed(2)),
+        totalMockExamsTaken: uniqueExamsTaken,
+        averageMockExamScore: parseFloat(avgScore.toFixed(2)),
+        highestMockExamScore: parseFloat(bestScore.toFixed(2)),
+        lastMockExamDate: attempts.length > 0 ? Math.max(...attempts.map(a => new Date(a.startedAt).getTime())) : null,
         notesAvailable,
         availableMockExams,
         subjectsAvailable,
@@ -435,6 +439,279 @@ exports.getPracticeProgress = async (req, res, next) => {
       },
       'Practice progress retrieved.'
     );
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/mock-exams ──────────────────────────────────────────────
+exports.getMockExams = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, search = '', subjectId } = req.query;
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const where = { isActive: true };
+    if (search) {
+      where.title = { contains: search, mode: 'insensitive' };
+    }
+    if (subjectId && subjectId !== 'ALL') {
+      where.subjectId = subjectId;
+    }
+
+    const [total, exams] = await Promise.all([
+      prisma.mockExam.count({ where }),
+      prisma.mockExam.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          subject: { select: { name: true } },
+          teacher: { select: { fullName: true } }
+        }
+      })
+    ]);
+
+    return sendSuccess(res, { exams, pagination: { total, page: pageNumber, limit: limitNumber, totalPages: Math.ceil(total / limitNumber) } }, 'Exams retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/mock-exams/:id ──────────────────────────────────────────
+exports.getMockExamDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    const exam = await prisma.mockExam.findUnique({
+      where: { id },
+      include: {
+        subject: { select: { name: true } },
+        questions: {
+          include: {
+            question: {
+              select: {
+                id: true,
+                question: true,
+                optionA: true,
+                optionB: true,
+                optionC: true,
+                optionD: true
+                // Explicitly excluding correctAnswer and explanation
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!exam || !exam.isActive) {
+      return res.status(404).json({ success: false, message: 'Exam not found or inactive.' });
+    }
+
+    const formattedExam = {
+      ...exam,
+      questions: exam.questions.map(q => q.question)
+    };
+
+    return sendSuccess(res, formattedExam, 'Exam details retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── POST /api/student/mock-exams/:id/start ───────────────────────────────────
+exports.startMockExam = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const { id: mockExamId } = req.params;
+
+    const exam = await prisma.mockExam.findUnique({ where: { id: mockExamId } });
+    if (!exam || !exam.isActive) {
+      return res.status(404).json({ success: false, message: 'Exam not available.' });
+    }
+
+    // Check for an already in-progress attempt that hasn't been submitted
+    const existingAttempt = await prisma.attempt.findFirst({
+      where: { studentId, mockExamId, submittedAt: null }
+    });
+
+    if (existingAttempt) {
+      return res.status(400).json({ success: false, message: 'You already have an active attempt for this exam.' });
+    }
+
+    const attempt = await prisma.attempt.create({
+      data: {
+        studentId,
+        mockExamId,
+        score: 0,
+        correctAnswers: 0,
+        totalQuestions: exam.numberOfQuestions
+      }
+    });
+
+    return sendSuccess(res, { attemptId: attempt.id, startedAt: attempt.startedAt }, 'Exam started successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── POST /api/student/mock-exams/:id/submit ──────────────────────────────────
+exports.submitMockExam = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const { id: mockExamId } = req.params;
+    const { attemptId, answers } = req.body; // answers: { [questionId]: "A" | "B" | "C" | "D" }
+
+    if (!attemptId || !answers) {
+      return res.status(400).json({ success: false, message: 'attemptId and answers are required.' });
+    }
+
+    const attempt = await prisma.attempt.findUnique({
+      where: { id: attemptId },
+      include: { mockExam: { include: { questions: { include: { question: true } } } } }
+    });
+
+    if (!attempt || attempt.studentId !== studentId || attempt.mockExamId !== mockExamId) {
+      return res.status(404).json({ success: false, message: 'Attempt not found or invalid.' });
+    }
+
+    if (attempt.submittedAt) {
+      return res.status(400).json({ success: false, message: 'This attempt has already been submitted.' });
+    }
+
+    const exam = attempt.mockExam;
+    const questions = exam.questions.map(q => q.question);
+    
+    let correctCount = 0;
+    const attemptAnswersData = [];
+
+    for (const q of questions) {
+      const selectedOption = answers[q.id] || null;
+      const isCorrect = selectedOption === q.correctAnswer;
+      if (isCorrect) correctCount++;
+
+      attemptAnswersData.push({
+        attemptId,
+        questionId: q.id,
+        selectedAnswer: selectedOption,
+        correctAnswer: q.correctAnswer,
+        isCorrect
+      });
+    }
+
+    await prisma.attemptAnswer.createMany({
+      data: attemptAnswersData
+    });
+
+    const percentage = (correctCount / exam.numberOfQuestions) * 100;
+    const passed = percentage >= exam.passingScore;
+    const submittedAt = new Date();
+    const durationTaken = Math.round((submittedAt - new Date(attempt.startedAt)) / 1000);
+
+    const updatedAttempt = await prisma.attempt.update({
+      where: { id: attemptId },
+      data: {
+        score: parseFloat(percentage.toFixed(2)),
+        correctAnswers: correctCount,
+        submittedAt,
+        durationTaken
+      }
+    });
+
+    return sendSuccess(res, {
+      score: updatedAttempt.score,
+      correctAnswers: correctCount,
+      totalQuestions: exam.numberOfQuestions,
+      percentage: updatedAttempt.score,
+      passed,
+      durationTaken
+    }, 'Exam submitted successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/mock-exams/history ──────────────────────────────────────
+exports.getMockExamHistory = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+    
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const where = { studentId, submittedAt: { not: null } };
+
+    const [total, attempts] = await Promise.all([
+      prisma.attempt.count({ where }),
+      prisma.attempt.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        orderBy: { submittedAt: 'desc' },
+        include: {
+          mockExam: {
+            select: { title: true, passingScore: true, durationMinutes: true, subject: { select: { name: true } } }
+          }
+        }
+      })
+    ]);
+
+    const formattedHistory = attempts.map(a => {
+      const passed = a.score >= a.mockExam.passingScore;
+      return {
+        id: a.id,
+        examTitle: a.mockExam.title,
+        subject: a.mockExam.subject.name,
+        date: a.submittedAt,
+        duration: a.durationTaken,
+        score: a.score,
+        percentage: a.score,
+        pass: passed
+      };
+    });
+
+    return sendSuccess(res, { history: formattedHistory, pagination: { total, page: pageNumber, limit: limitNumber, totalPages: Math.ceil(total / limitNumber) } }, 'History retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/mock-exams/history/:attemptId ───────────────────────────
+exports.getMockExamHistoryDetails = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const { attemptId } = req.params;
+
+    const attempt = await prisma.attempt.findUnique({
+      where: { id: attemptId },
+      include: {
+        mockExam: {
+          select: { title: true, passingScore: true, durationMinutes: true, subject: { select: { name: true } } }
+        },
+        answers: {
+          include: {
+            question: true
+          }
+        }
+      }
+    });
+
+    if (!attempt || attempt.studentId !== studentId) {
+      return res.status(404).json({ success: false, message: 'Attempt not found.' });
+    }
+
+    if (!attempt.submittedAt) {
+      return res.status(400).json({ success: false, message: 'This attempt is not yet completed.' });
+    }
+
+    const passed = attempt.score >= attempt.mockExam.passingScore;
+    
+    return sendSuccess(res, { attempt, passed }, 'Attempt review retrieved.');
   } catch (err) {
     next(err);
   }
