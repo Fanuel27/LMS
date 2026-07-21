@@ -44,6 +44,8 @@ model User {
   notesCreated     Note[]        @relation("TeacherNotes")
   mockExamsCreated MockExam[]    @relation("TeacherMockExams")
   attempts         Attempt[]     @relation("StudentAttempts")
+  practiceAttempts PracticeAttempt[]
+  practiceSessions PracticeSession[]
 
   @@index([email])
   @@index([role])
@@ -61,6 +63,8 @@ model Subject {
   questions Question[]
   notes     Note[]
   mockExams MockExam[]
+  practiceAttempts PracticeAttempt[]
+  practiceSessions PracticeSession[]
 
   @@index([category])
   @@map("subjects")
@@ -85,6 +89,7 @@ model Question {
   subject         Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   mockExamLinks   MockExamQuestion[]
   attemptAnswers  AttemptAnswer[]
+  practiceAttempts PracticeAttempt[]
 
   @@index([teacherId])
   @@index([subjectId])
@@ -179,4 +184,59 @@ model AttemptAnswer {
 
   @@index([attemptId])
   @@map("attempt_answers")
+}
+
+model PracticeAttempt {
+  id             String        @id @default(uuid())
+
+  studentId      String
+  subjectId      String
+  questionId     String
+  practiceSessionId String
+
+  selectedAnswer AnswerOption?
+  isCorrect      Boolean
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  student         User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject         Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  question        Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  practiceSession PracticeSession @relation(fields: [practiceSessionId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([subjectId])
+  @@index([questionId])
+  @@index([practiceSessionId])
+
+  @@map("practice_attempts")
+}
+
+model PracticeSession {
+  id               String   @id @default(uuid())
+
+  studentId        String
+  subjectId        String
+
+  mode             String
+  totalQuestions   Int
+  correctAnswers   Int      @default(0)
+  incorrectAnswers Int      @default(0)
+  accuracy         Float    @default(0)
+
+  startedAt        DateTime @default(now())
+  completedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  student          User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject          Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  attempts         PracticeAttempt[]
+
+  @@index([studentId])
+  @@index([subjectId])
+
+  @@map("practice_sessions")
 }

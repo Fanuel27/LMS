@@ -13,4 +13,10 @@ router.get('/subjects', studentController.getSubjects);
 router.get('/notes', studentController.getNotes);
 router.get('/notes/:id/download', studentController.downloadNotePdf);
 
+router.post('/practice/start', studentController.startPracticeSession);
+router.post('/practice/submit', studentController.submitPracticeAnswer);
+router.post('/practice/session/:id/finish', studentController.finishPracticeSession);
+router.get('/practice/sessions', studentController.getPracticeSessions);
+router.get('/practice/progress', studentController.getPracticeProgress);
+
 module.exports = router;
