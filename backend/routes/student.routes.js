@@ -26,4 +26,10 @@ router.get('/mock-exams/:id', studentController.getMockExamDetails);
 router.post('/mock-exams/:id/start', studentController.startMockExam);
 router.post('/mock-exams/:id/submit', studentController.submitMockExam);
 
+router.get('/progress', studentController.getProgressOverview);
+router.get('/progress/practice', studentController.getProgressPracticeHistory);
+router.get('/progress/mock-exams', studentController.getProgressMockHistory);
+router.get('/progress/subjects', studentController.getProgressSubjects);
+router.get('/progress/activity', studentController.getProgressActivity);
+
 module.exports = router;

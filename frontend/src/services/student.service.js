@@ -17,4 +17,10 @@ export const studentService = {
   getMockExamDetails: (id) => api.get(`/student/mock-exams/${id}`),
   startMockExam: (id) => api.post(`/student/mock-exams/${id}/start`),
   submitMockExam: (id, data) => api.post(`/student/mock-exams/${id}/submit`, data),
+
+  getProgressOverview: () => api.get('/student/progress'),
+  getProgressPracticeHistory: (params) => api.get('/student/progress/practice', { params }),
+  getProgressMockHistory: (params) => api.get('/student/progress/mock-exams', { params }),
+  getProgressSubjects: () => api.get('/student/progress/subjects'),
+  getProgressActivity: () => api.get('/student/progress/activity'),
 };

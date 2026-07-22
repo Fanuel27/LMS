@@ -60,6 +60,17 @@ export default function StudentExamsPage() {
     return () => clearTimeout(handler)
   }, [search])
 
+  // ─── Deep Link Recovery ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const reviewId = searchParams.get('review')
+    if (reviewId) {
+      handleReviewAttempt(reviewId)
+      searchParams.delete('review')
+      setSearchParams(searchParams, { replace: true })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // ─── Local Storage Recovery ──────────────────────────────────────────────────
   useEffect(() => {
     const savedState = localStorage.getItem('activeMockExam')

@@ -716,3 +716,246 @@ exports.getMockExamHistoryDetails = async (req, res, next) => {
     next(err);
   }
 };
+
+// ─── GET /api/student/progress ────────────────────────────────────────────────
+exports.getProgressOverview = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+
+    // Fetch practice stats
+    const practiceAttempts = await prisma.practiceAttempt.findMany({
+      where: { studentId },
+      orderBy: { createdAt: 'desc' }
+    });
+    const totalPracticeQuestions = practiceAttempts.length;
+    const practiceCorrect = practiceAttempts.filter(a => a.isCorrect).length;
+    const overallPracticeAccuracy = totalPracticeQuestions > 0 ? (practiceCorrect / totalPracticeQuestions) * 100 : 0;
+
+    let currentPracticeStreak = 0;
+    for (let i = 0; i < practiceAttempts.length; i++) {
+      if (practiceAttempts[i].isCorrect) currentPracticeStreak++;
+      else break;
+    }
+
+    let bestPracticeStreak = 0;
+    let tempStreak = 0;
+    const chronologicalPractice = [...practiceAttempts].reverse();
+    for (let i = 0; i < chronologicalPractice.length; i++) {
+      if (chronologicalPractice[i].isCorrect) {
+        tempStreak++;
+        if (tempStreak > bestPracticeStreak) bestPracticeStreak = tempStreak;
+      } else tempStreak = 0;
+    }
+
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const practiceThisWeek = practiceAttempts.filter(a => new Date(a.createdAt) >= oneWeekAgo).length;
+
+    // Fetch mock exam stats
+    const mockAttempts = await prisma.attempt.findMany({
+      where: { studentId, submittedAt: { not: null } }
+    });
+    const totalMockExamsTaken = mockAttempts.length;
+    const overallMockAverage = totalMockExamsTaken > 0 ? mockAttempts.reduce((acc, curr) => acc + curr.score, 0) / totalMockExamsTaken : 0;
+    const highestMockScore = totalMockExamsTaken > 0 ? Math.max(...mockAttempts.map(a => a.score)) : 0;
+    const lowestMockScore = totalMockExamsTaken > 0 ? Math.min(...mockAttempts.map(a => a.score)) : 0;
+    const averageTimePerMock = totalMockExamsTaken > 0 ? mockAttempts.reduce((acc, curr) => acc + (curr.durationTaken || 0), 0) / totalMockExamsTaken : 0;
+
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const mocksThisMonth = mockAttempts.filter(a => new Date(a.submittedAt) >= oneMonthAgo).length;
+
+    const overallLearningProgress = (overallPracticeAccuracy + overallMockAverage) / 2;
+
+    return sendSuccess(res, {
+      overallPracticeAccuracy: parseFloat(overallPracticeAccuracy.toFixed(1)),
+      overallMockAverage: parseFloat(overallMockAverage.toFixed(1)),
+      totalPracticeQuestions,
+      totalMockExamsTaken,
+      currentPracticeStreak,
+      bestPracticeStreak,
+      highestMockScore,
+      lowestMockScore,
+      averageTimePerMock: Math.round(averageTimePerMock),
+      practiceQuestionsThisWeek: practiceThisWeek,
+      mockExamsThisMonth: mocksThisMonth,
+      overallLearningProgress: parseFloat(overallLearningProgress.toFixed(1))
+    }, 'Overview retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/progress/practice ───────────────────────────────────────
+exports.getProgressPracticeHistory = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [total, sessions] = await Promise.all([
+      prisma.practiceSession.count({ where: { studentId, completedAt: { not: null } } }),
+      prisma.practiceSession.findMany({
+        where: { studentId, completedAt: { not: null } },
+        orderBy: { completedAt: 'desc' },
+        skip,
+        take: limitNum,
+        include: { subject: { select: { name: true } } }
+      })
+    ]);
+
+    const history = sessions.map(s => ({
+      sessionId: s.id,
+      subject: s.subject.name,
+      startedAt: s.startedAt,
+      completedAt: s.completedAt,
+      questionsAnswered: s.totalQuestions,
+      correct: s.correctAnswers,
+      incorrect: s.incorrectAnswers,
+      accuracy: s.accuracy,
+      duration: s.completedAt ? Math.round((new Date(s.completedAt) - new Date(s.startedAt)) / 1000) : 0
+    }));
+
+    return sendSuccess(res, { history, pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) } }, 'Practice history retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/progress/mock-exams ─────────────────────────────────────
+exports.getProgressMockHistory = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [total, attempts] = await Promise.all([
+      prisma.attempt.count({ where: { studentId, submittedAt: { not: null } } }),
+      prisma.attempt.findMany({
+        where: { studentId, submittedAt: { not: null } },
+        orderBy: { submittedAt: 'desc' },
+        skip,
+        take: limitNum,
+        include: { mockExam: { select: { title: true, passingScore: true, subject: { select: { name: true } } } } }
+      })
+    ]);
+
+    const history = attempts.map(a => ({
+      attemptId: a.id,
+      examTitle: a.mockExam.title,
+      subject: a.mockExam.subject.name,
+      score: a.score,
+      percentage: a.score,
+      passingScore: a.mockExam.passingScore,
+      passed: a.score >= a.mockExam.passingScore,
+      startedAt: a.startedAt,
+      submittedAt: a.submittedAt,
+      duration: a.durationTaken
+    }));
+
+    return sendSuccess(res, { history, pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) } }, 'Mock exam history retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/progress/subjects ───────────────────────────────────────
+exports.getProgressSubjects = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+
+    const subjects = await prisma.subject.findMany({ select: { id: true, name: true } });
+    
+    const [practiceAttempts, mockAttempts] = await Promise.all([
+      prisma.practiceAttempt.findMany({ where: { studentId } }),
+      prisma.attempt.findMany({ where: { studentId, submittedAt: { not: null } }, include: { mockExam: true } })
+    ]);
+
+    const analytics = subjects.map(sub => {
+      const pAttempts = practiceAttempts.filter(a => a.subjectId === sub.id);
+      const pCorrect = pAttempts.filter(a => a.isCorrect).length;
+      const practiceAccuracy = pAttempts.length > 0 ? (pCorrect / pAttempts.length) * 100 : 0;
+      
+      const mAttempts = mockAttempts.filter(a => a.mockExam.subjectId === sub.id);
+      const mScoreSum = mAttempts.reduce((acc, curr) => acc + curr.score, 0);
+      const mockAverage = mAttempts.length > 0 ? mScoreSum / mAttempts.length : 0;
+      const bestScore = mAttempts.length > 0 ? Math.max(...mAttempts.map(a => a.score)) : 0;
+      const worstScore = mAttempts.length > 0 ? Math.min(...mAttempts.map(a => a.score)) : 0;
+
+      const pLast = pAttempts.length > 0 ? Math.max(...pAttempts.map(a => new Date(a.createdAt).getTime())) : 0;
+      const mLast = mAttempts.length > 0 ? Math.max(...mAttempts.map(a => new Date(a.submittedAt).getTime())) : 0;
+      const lastActivity = Math.max(pLast, mLast);
+
+      return {
+        subjectName: sub.name,
+        practiceAttempts: pAttempts.length,
+        practiceAccuracy: parseFloat(practiceAccuracy.toFixed(1)),
+        mockExamsTaken: mAttempts.length,
+        mockAverage: parseFloat(mockAverage.toFixed(1)),
+        bestScore,
+        worstScore,
+        lastActivity: lastActivity > 0 ? new Date(lastActivity) : null
+      };
+    }).filter(a => a.practiceAttempts > 0 || a.mockExamsTaken > 0);
+
+    return sendSuccess(res, analytics, 'Subject analytics retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/progress/activity ───────────────────────────────────────
+exports.getProgressActivity = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+
+    const [practiceSessions, mockAttempts] = await Promise.all([
+      prisma.practiceSession.findMany({
+        where: { studentId, completedAt: { not: null } },
+        orderBy: { completedAt: 'desc' },
+        take: 20,
+        include: { subject: { select: { name: true } } }
+      }),
+      prisma.attempt.findMany({
+        where: { studentId, submittedAt: { not: null } },
+        orderBy: { submittedAt: 'desc' },
+        take: 20,
+        include: { mockExam: { select: { title: true, subject: { select: { name: true } } } } }
+      })
+    ]);
+
+    let activities = [];
+
+    practiceSessions.forEach(p => {
+      activities.push({
+        id: `p-${p.id}`,
+        type: 'PRACTICE',
+        subject: p.subject.name,
+        title: `${p.mode} Practice`,
+        score: p.accuracy,
+        date: p.completedAt
+      });
+    });
+
+    mockAttempts.forEach(m => {
+      activities.push({
+        id: `m-${m.id}`,
+        type: 'MOCK_EXAM',
+        subject: m.mockExam.subject.name,
+        title: m.mockExam.title,
+        score: m.score,
+        date: m.submittedAt
+      });
+    });
+
+    activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+    activities = activities.slice(0, 20);
+
+    return sendSuccess(res, activities, 'Recent activity retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
