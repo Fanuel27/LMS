@@ -23,4 +23,9 @@ export const studentService = {
   getProgressMockHistory: (params) => api.get('/student/progress/mock-exams', { params }),
   getProgressSubjects: () => api.get('/student/progress/subjects'),
   getProgressActivity: () => api.get('/student/progress/activity'),
+  
+  getProfile: () => api.get('/student/profile'),
+  updateProfile: (data) => api.put('/student/profile', data),
+  changePassword: (data) => api.put('/student/change-password', data),
+  getLeaderboard: (params) => api.get('/student/leaderboard', { params }),
 };

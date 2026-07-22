@@ -959,3 +959,232 @@ exports.getProgressActivity = async (req, res, next) => {
     next(err);
   }
 };
+
+// ─── GET /api/student/profile ────────────────────────────────────────────────
+exports.getProfile = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+
+    // Fetch user details
+    const user = await prisma.user.findUnique({
+      where: { id: studentId },
+      select: {
+        fullName: true,
+        email: true,
+        role: true,
+        createdAt: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Fetch stats to include in profile
+    const practiceAttempts = await prisma.practiceAttempt.findMany({
+      where: { studentId },
+    });
+    const totalPracticeQuestions = practiceAttempts.length;
+    const practiceCorrect = practiceAttempts.filter(a => a.isCorrect).length;
+    const overallPracticeAccuracy = totalPracticeQuestions > 0 ? (practiceCorrect / totalPracticeQuestions) * 100 : 0;
+
+    const mockAttempts = await prisma.attempt.findMany({
+      where: { studentId, submittedAt: { not: null } },
+    });
+    const mockExamsTaken = mockAttempts.length;
+    const averageMockScore = mockExamsTaken > 0 ? mockAttempts.reduce((acc, curr) => acc + curr.score, 0) / mockExamsTaken : 0;
+    const bestMockScore = mockExamsTaken > 0 ? Math.max(...mockAttempts.map(a => a.score)) : 0;
+
+    const profileData = {
+      ...user,
+      stats: {
+        totalPracticeQuestions,
+        overallPracticeAccuracy: parseFloat(overallPracticeAccuracy.toFixed(1)),
+        mockExamsTaken,
+        averageMockScore: parseFloat(averageMockScore.toFixed(1)),
+        bestMockScore
+      }
+    };
+
+    return sendSuccess(res, profileData, 'Profile retrieved successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── PUT /api/student/profile ────────────────────────────────────────────────
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const { fullName } = req.body;
+
+    if (!fullName || fullName.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Full name is required.' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: studentId },
+      data: { fullName: fullName.trim() },
+      select: { fullName: true, email: true, role: true, createdAt: true }
+    });
+
+    return sendSuccess(res, updatedUser, 'Profile updated successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── PUT /api/student/change-password ─────────────────────────────────────────
+exports.changePassword = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Current and new passwords are required.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: studentId } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const bcrypt = require('bcryptjs');
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Incorrect current password.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id: studentId },
+      data: { password: hashedPassword }
+    });
+
+    return sendSuccess(res, null, 'Password updated successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/student/leaderboard ─────────────────────────────────────────────
+exports.getLeaderboard = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, search = '' } = req.query;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get all students
+    let usersQuery = { role: 'STUDENT', isActive: true };
+    if (search) {
+      usersQuery.fullName = { contains: search, mode: 'insensitive' };
+    }
+
+    const students = await prisma.user.findMany({
+      where: usersQuery,
+      select: { id: true, fullName: true }
+    });
+
+    const studentIds = students.map(s => s.id);
+    
+    const [mockAttempts, practiceAttempts] = await Promise.all([
+      prisma.attempt.findMany({
+        where: { studentId: { in: studentIds }, submittedAt: { not: null } },
+        select: { studentId: true, score: true }
+      }),
+      prisma.practiceAttempt.findMany({
+        where: { studentId: { in: studentIds } },
+        select: { studentId: true, isCorrect: true, createdAt: true },
+        orderBy: { createdAt: 'desc' }
+      })
+    ]);
+
+    const mockMap = {};
+    mockAttempts.forEach(m => {
+      if (!mockMap[m.studentId]) mockMap[m.studentId] = [];
+      mockMap[m.studentId].push(m.score);
+    });
+
+    const practiceMap = {};
+    practiceAttempts.forEach(p => {
+      if (!practiceMap[p.studentId]) practiceMap[p.studentId] = [];
+      practiceMap[p.studentId].push(p);
+    });
+
+    let leaderboard = students.map(student => {
+      const mocks = mockMap[student.id] || [];
+      const mockExamsTaken = mocks.length;
+      const averageMockScore = mockExamsTaken > 0 ? mocks.reduce((a, b) => a + b, 0) / mockExamsTaken : 0;
+
+      const practices = practiceMap[student.id] || [];
+      const totalPracticeQuestions = practices.length;
+      const correctPractice = practices.filter(p => p.isCorrect).length;
+      const practiceAccuracy = totalPracticeQuestions > 0 ? (correctPractice / totalPracticeQuestions) * 100 : 0;
+
+      let bestStreak = 0;
+      let tempStreak = 0;
+      const chronologicalPractice = [...practices].reverse();
+      for (let i = 0; i < chronologicalPractice.length; i++) {
+        if (chronologicalPractice[i].isCorrect) {
+          tempStreak++;
+          if (tempStreak > bestStreak) bestStreak = tempStreak;
+        } else tempStreak = 0;
+      }
+
+      return {
+        studentId: student.id,
+        fullName: student.fullName,
+        averageMockScore: parseFloat(averageMockScore.toFixed(1)),
+        practiceAccuracy: parseFloat(practiceAccuracy.toFixed(1)),
+        bestStreak,
+        mockExamsTaken,
+        totalPracticeQuestions
+      };
+    });
+
+    // Ranking priority:
+    // 1. Highest average mock score
+    // 2. Highest practice accuracy
+    // 3. Highest best streak
+    leaderboard.sort((a, b) => {
+      if (b.averageMockScore !== a.averageMockScore) return b.averageMockScore - a.averageMockScore;
+      if (b.practiceAccuracy !== a.practiceAccuracy) return b.practiceAccuracy - a.practiceAccuracy;
+      return b.bestStreak - a.bestStreak;
+    });
+
+    // Assign ranks
+    leaderboard = leaderboard.map((l, idx) => ({ ...l, rank: idx + 1 }));
+    
+    // Privacy: remove studentId, add isMe
+    const loggedInStudentId = req.user.id;
+    leaderboard = leaderboard.map(l => {
+      const isMe = l.studentId === loggedInStudentId;
+      const { studentId, ...rest } = l;
+      return { ...rest, isMe };
+    });
+
+    // Pagination
+    const total = leaderboard.length;
+    const paginated = leaderboard.slice(skip, skip + limitNum);
+
+    return sendSuccess(res, {
+      leaderboard: paginated,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    }, 'Leaderboard retrieved successfully.');
+
+  } catch (err) {
+    next(err);
+  }
+};

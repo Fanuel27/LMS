@@ -32,4 +32,9 @@ router.get('/progress/mock-exams', studentController.getProgressMockHistory);
 router.get('/progress/subjects', studentController.getProgressSubjects);
 router.get('/progress/activity', studentController.getProgressActivity);
 
+router.get('/profile', studentController.getProfile);
+router.put('/profile', studentController.updateProfile);
+router.put('/change-password', studentController.changePassword);
+router.get('/leaderboard', studentController.getLeaderboard);
+
 module.exports = router;
