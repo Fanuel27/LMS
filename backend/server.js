@@ -16,6 +16,7 @@ const mockExamRoutes = require('./routes/mockExam.routes');
 const studentRoutes = require('./routes/student.routes');
 const noteRoutes = require('./routes/note.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const adminRoutes = require('./routes/admin.routes');
 const { errorHandler, notFoundHandler } = require('./middleware/error.middleware');
 
 const app = express();
@@ -88,6 +89,7 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/mock-exams', mockExamRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ─── Error Handling (must be last) ────────────────────────────────────────────
 app.use(notFoundHandler);

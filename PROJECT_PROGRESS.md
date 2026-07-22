@@ -133,6 +133,45 @@ Without altering the database schema or duplicating notifications, the system no
 
 ---
 
-## Phase 8 — NOT Started
+## Phase 8A — COMPLETED
+**Admin Analytics & System Dashboard**
+
+Phase 8A implements a comprehensive, read-only analytics dashboard for Administrators to monitor platform usage, user engagement, and content performance across the system.
+
+### Files Created
+1. `backend/controllers/admin.controller.js`
+2. `backend/routes/admin.routes.js`
+3. `frontend/src/services/adminAnalytics.service.js`
+4. `frontend/src/pages/admin/AdminAnalyticsPage.jsx`
+
+### Files Modified
+1. `backend/server.js` — Registered `/api/admin` routes.
+2. `frontend/src/layouts/AdminLayout.jsx` — Added Analytics to the sidebar navigation.
+3. `frontend/src/routes/index.jsx` — Registered the `/admin/analytics` route.
+
+### Backend Changes (API Endpoints Added)
+- `GET /api/admin/analytics/overview` — High-level metric counts using concurrent `prisma.count()`.
+- `GET /api/admin/analytics/users` — Growth charts by month and role distribution.
+- `GET /api/admin/analytics/subjects` — Aggregated attempt counts and average scores grouped by subject.
+- `GET /api/admin/analytics/activity` — A merged chronological feed slicing the newest records from Users, Notes, Questions, Mocks, Attempts, and Announcements.
+- `GET /api/admin/analytics/performance` — Top students by mock average, most active teachers, and easiest/hardest subjects.
+
+### Frontend Changes
+- Constructed the `AdminAnalyticsPage` utilizing **Recharts** for visualizations (LineChart, BarChart, PieChart, RadarChart).
+- Reused existing Shadcn/UI components (`Card`, `Badge`, `PageHeader`) to construct a cohesive layout matching the existing design language.
+- Displayed data in responsive table structures.
+- Implemented `AdminAnalyticsService` employing `Axios` and `useQuery` with `staleTime` to avoid unnecessary network waterfalls.
+
+### Testing & Verification
+- `npm run build` completed successfully without any unresolved module errors.
+- **Strict Read-Only Verification**: No changes were made to the Prisma schema or existing CRUD controllers.
+- Validated that `Promise.all` efficiently circumvents N+1 performance issues on the dashboard load.
+
+### Known Issues
+- None.
+
+---
+
+## Phase 8B — NOT Started
 
 Awaiting user approval before starting the next phase.
