@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
+import NotificationBell from '@/components/common/NotificationBell'
 
 // ─── Navigation structure ─────────────────────────────────────────────────────
 
@@ -241,8 +242,12 @@ export default function TeacherLayout() {
 
           <div className="flex-1" />
 
-          {/* User dropdown */}
-          <UserDropdown user={user} onLogout={handleLogout} />
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            {/* User dropdown */}
+            <UserDropdown user={user} onLogout={handleLogout} />
+          </div>
         </header>
 
         {/* Page content */}

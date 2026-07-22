@@ -8,6 +8,7 @@ const {
 const { comparePassword } = require('../utils/passwordUtils');
 const { sendSuccess, sendError, sendPaginated } = require('../utils/response');
 const prisma = require('../config/db');
+const notificationService = require('../services/notification.service');
 
 // ─── Admin: Manage all users ───────────────────────────────────────────────
 
@@ -67,6 +68,9 @@ const createUser = (role) => async (req, res, next) => {
     }
 
     const user = await userService.createUser(parsed.data);
+    
+    await notificationService.notifyRole('ADMIN', `${role.charAt(0) + role.slice(1).toLowerCase()} Account Created`, `${user.fullName} (${user.email}) was created.`, 'INFO');
+
     return sendSuccess(res, user, `${role.charAt(0) + role.slice(1).toLowerCase()} created successfully.`, 201);
   } catch (err) {
     if (err.statusCode) return sendError(res, err.message, err.statusCode);
@@ -87,7 +91,15 @@ const updateUser = async (req, res, next) => {
       return sendError(res, 'Validation failed.', 422, parsed.error.flatten().fieldErrors);
     }
 
+    const previousUser = await userService.getUserById(req.params.id);
     const user = await userService.updateUser(req.params.id, parsed.data);
+
+    if (parsed.data.isActive !== undefined && parsed.data.isActive !== previousUser.isActive) {
+      const status = user.isActive ? 'activated' : 'deactivated';
+      const roleStr = user.role.charAt(0) + user.role.slice(1).toLowerCase();
+      await notificationService.notifyRole('ADMIN', `${roleStr} Account ${status.charAt(0).toUpperCase() + status.slice(1)}`, `${user.fullName} was ${status}.`, 'INFO');
+    }
+
     return sendSuccess(res, user, 'User updated successfully.');
   } catch (err) {
     if (err.statusCode) return sendError(res, err.message, err.statusCode);

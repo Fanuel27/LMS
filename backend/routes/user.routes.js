@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/user.controller');
+const notificationController = require('../controllers/notification.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { requireRole } = require('../middleware/role.middleware');
 
@@ -10,6 +11,12 @@ const anyAuth = [authenticate];
 
 // ─── Admin Stats ─────────────────────────────────────────────────────────────
 router.get('/admin/stats', ...adminOnly, ctrl.getStats);
+
+// ─── Admin Announcements ─────────────────────────────────────────────────────
+router.get('/admin/announcements', ...adminOnly, notificationController.getAdminAnnouncements);
+router.post('/admin/announcements', ...adminOnly, notificationController.createAnnouncement);
+router.put('/admin/announcements/:id', ...adminOnly, notificationController.updateAnnouncement);
+router.delete('/admin/announcements/:id', ...adminOnly, notificationController.deleteAdminAnnouncement);
 
 // ─── Student Management (Admin only) ─────────────────────────────────────────
 router.get('/students', ...adminOnly, ctrl.getStudents);

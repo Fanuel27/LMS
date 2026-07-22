@@ -2,10 +2,11 @@ import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import {
   LayoutDashboard, Users, GraduationCap, LogOut, Menu, X,
-  BookOpen, Shield, ChevronDown, Bell, Settings, User
+  BookOpen, Shield, ChevronDown, Bell, Settings, User, Megaphone
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
+import NotificationBell from '@/components/common/NotificationBell'
 
 const navItems = [
   {
@@ -19,6 +20,12 @@ const navItems = [
     items: [
       { to: '/admin/students', label: 'Students', icon: GraduationCap },
       { to: '/admin/teachers', label: 'Teachers', icon: Users },
+    ],
+  },
+  {
+    label: 'System Settings',
+    items: [
+      { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
     ],
   },
 ]
@@ -238,14 +245,8 @@ export default function AdminLayout() {
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
-            {/* Notification bell — placeholder for future use */}
-            <button
-              id="admin-notifications-btn"
-              className="relative p-2 rounded-lg hover:bg-accent transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell className="w-4 h-4 text-muted-foreground" />
-            </button>
+            {/* Notification bell */}
+            <NotificationBell />
 
             {/* User dropdown */}
             <UserDropdown user={user} onLogout={handleLogout} />

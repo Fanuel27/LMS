@@ -3,6 +3,7 @@ const path = require('path');
 const prisma = require('../config/db');
 const { sendSuccess, sendError } = require('../utils/response');
 const { createNoteSchema, updateNoteSchema } = require('../validators/note.validator');
+const notificationService = require('../services/notification.service');
 
 // Helper to delete old file
 const deleteFile = (filename) => {
@@ -121,6 +122,20 @@ exports.createNote = async (req, res, next) => {
         subject: { select: { name: true } },
       },
     });
+
+    await notificationService.notifyRole(
+      'STUDENT',
+      'New Study Note',
+      `A new note "${note.title}" was uploaded for ${note.subject.name}.`,
+      'INFO'
+    );
+
+    await notificationService.notifyUser(
+      teacherId,
+      'Note Uploaded',
+      `Your note "${note.title}" was successfully uploaded.`,
+      'SUCCESS'
+    );
 
     return sendSuccess(res, note, 'Note created successfully.', 201);
   } catch (err) {

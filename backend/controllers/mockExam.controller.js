@@ -1,6 +1,7 @@
 const prisma = require('../config/db');
 const { sendSuccess, sendError } = require('../utils/response');
 const { createMockExamSchema, updateMockExamSchema } = require('../validators/mockExam.validator');
+const notificationService = require('../services/notification.service');
 
 // ─── GET /api/mock-exams ──────────────────────────────────────────────────────
 exports.getMockExams = async (req, res, next) => {
@@ -135,6 +136,11 @@ exports.createMockExam = async (req, res, next) => {
       },
     });
 
+    if (newExam.isActive) {
+      await notificationService.notifyRole('STUDENT', 'New Mock Exam Published', `A new mock exam "${newExam.title}" is now available for ${newExam.subject.name}.`, 'INFO');
+      await notificationService.notifyUser(teacherId, 'Mock Exam Published', `Your mock exam "${newExam.title}" is now published.`, 'SUCCESS');
+    }
+
     return sendSuccess(res, newExam, 'Mock exam created successfully.', 201);
   } catch (err) {
     next(err);
@@ -204,6 +210,11 @@ exports.updateMockExam = async (req, res, next) => {
         },
       });
     });
+
+    if (updatedExam.isActive && !existing.isActive) {
+      await notificationService.notifyRole('STUDENT', 'New Mock Exam Published', `A new mock exam "${updatedExam.title}" is now available for ${updatedExam.subject.name}.`, 'INFO');
+      await notificationService.notifyUser(teacherId, 'Mock Exam Published', `Your mock exam "${updatedExam.title}" is now published.`, 'SUCCESS');
+    }
 
     return sendSuccess(res, updatedExam, 'Mock exam updated successfully.');
   } catch (err) {

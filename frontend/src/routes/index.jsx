@@ -11,6 +11,7 @@ import StudentLoginPage from '@/pages/auth/StudentLoginPage'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminStudentsPage from '@/pages/admin/AdminStudentsPage'
 import AdminTeachersPage from '@/pages/admin/AdminTeachersPage'
+import AdminAnnouncementsPage from '@/pages/admin/AdminAnnouncementsPage'
 
 // Teacher / Student dashboard stubs
 import TeacherDashboard from '@/pages/teacher/TeacherDashboard'
@@ -75,6 +76,7 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="students" element={<AdminStudentsPage />} />
         <Route path="teachers" element={<AdminTeachersPage />} />
+        <Route path="announcements" element={<AdminAnnouncementsPage />} />
       </Route>
 
       {/* ── Teacher — protected ─────────────────────────────────────────── */}

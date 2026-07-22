@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const { sendSuccess } = require('../utils/response');
+const notificationService = require('../services/notification.service');
 
 // ─── GET /api/student/stats ───────────────────────────────────────────────────
 exports.getStats = async (req, res, next) => {
@@ -320,6 +321,13 @@ exports.finishPracticeSession = async (req, res, next) => {
       }
     });
 
+    await notificationService.notifyUser(
+      studentId,
+      'Practice Session Completed',
+      `You completed a practice session with an accuracy of ${accuracy.toFixed(2)}%.`,
+      'INFO'
+    );
+
     return sendSuccess(res, null, 'Session finished successfully.');
   } catch (err) {
     next(err);
@@ -620,6 +628,13 @@ exports.submitMockExam = async (req, res, next) => {
         durationTaken
       }
     });
+
+    await notificationService.notifyUser(
+      studentId,
+      passed ? 'Mock Exam Passed 🎉' : 'Mock Exam Completed',
+      `You scored ${percentage.toFixed(2)}% on "${exam.title}". ${passed ? 'Great job!' : 'Keep practicing!'}`,
+      passed ? 'SUCCESS' : 'INFO'
+    );
 
     return sendSuccess(res, {
       score: updatedAttempt.score,
