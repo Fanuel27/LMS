@@ -15,6 +15,7 @@ import AdminAnnouncementsPage from '@/pages/admin/AdminAnnouncementsPage'
 import AdminAnalyticsPage from '@/pages/admin/AdminAnalyticsPage'
 import AdminSystemSettingsPage from '@/pages/admin/AdminSystemSettingsPage'
 import AdminAuditLogsPage from '@/pages/admin/AdminAuditLogsPage'
+import AdminBackupsPage from '@/pages/admin/AdminBackupsPage'
 
 // Teacher / Student dashboard stubs
 import TeacherDashboard from '@/pages/teacher/TeacherDashboard'
@@ -83,6 +84,7 @@ export default function AppRoutes() {
         <Route path="analytics" element={<AdminAnalyticsPage />} />
         <Route path="settings" element={<AdminSystemSettingsPage />} />
         <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+        <Route path="backups" element={<AdminBackupsPage />} />
       </Route>
 
       {/* ── Teacher — protected ─────────────────────────────────────────── */}

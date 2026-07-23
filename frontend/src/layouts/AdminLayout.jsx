@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import {
   LayoutDashboard, Users, GraduationCap, LogOut, Menu, X,
-  BookOpen, Shield, ChevronDown, Bell, Settings, User, Megaphone, LineChart, ClipboardList
+  BookOpen, Shield, ChevronDown, Bell, Settings, User, Megaphone, LineChart, ClipboardList, Database
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
@@ -29,6 +29,7 @@ const navItems = [
     items: [
       { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
       { to: '/admin/audit-logs', label: 'Audit Logs', icon: ClipboardList },
+      { to: '/admin/backups', label: 'Backup & Restore', icon: Database },
     ],
   },
 ]

@@ -213,8 +213,62 @@ Phase 8B introduces a centralized interface for Administrators to manage platfor
 ### Known Issues
 - None.
 
+## Phase 9A — COMPLETED
+**Audit Logs & Activity Tracking**
+
+Phase 9A introduces a centralized audit logging system that asynchronously records important actions performed across the platform without interrupting or slowing down existing business logic.
+
+### Files Created
+1. `backend/controllers/auditLog.controller.js`
+2. `backend/routes/auditLog.routes.js`
+3. `backend/services/auditLog.service.js`
+4. `frontend/src/services/auditLog.service.js`
+5. `frontend/src/pages/admin/AdminAuditLogsPage.jsx`
+
+### Database Changes
+- Generated a new migration `add_audit_logs` using `npx prisma migrate dev`.
+- Added the `AuditLog` table to store system activities.
+
+### Endpoints Added
+- `GET /api/admin/audit-logs`
+- `GET /api/admin/audit-logs/actions` (Dynamic distinct actions fetcher)
+- `GET /api/admin/audit-logs/:id`
+
 ---
 
-## Phase 9A — NOT Started
+## Phase 9B — COMPLETED
+**Backup, Restore & Data Export**
+
+Phase 9B provides administrators with tools to export platform data (CSV), create full JSON backup snapshots, and restore data safely using Prisma transactions.
+
+### Files Created
+1. `backend/controllers/backup.controller.js`
+2. `backend/routes/backup.routes.js`
+3. `backend/services/backup.service.js`
+4. `frontend/src/services/backup.service.js`
+5. `frontend/src/pages/admin/AdminBackupsPage.jsx`
+
+### Files Modified
+1. `backend/server.js` — Mounted `/api/admin/backups` routes.
+2. `frontend/src/routes/index.jsx` — Registered the `/admin/backups` route.
+3. `frontend/src/layouts/AdminLayout.jsx` — Added Backup & Restore to the sidebar under System Settings.
+
+### Endpoints Added
+- `GET /api/admin/backups/export/*` (Users, Students, Questions, Mock Exams, Results, Audit Logs, Settings)
+- `POST /api/admin/backups/create`
+- `POST /api/admin/backups/restore`
+
+### Restore Policy Highlights
+- **Merge Mode**: Updates non-sensitive fields of existing users. Preserves all passwords. Skips users that don't exist.
+- **Replace Mode**: Wipes all application data *except* users. Restores non-user data. Preserves all passwords and existing users to prevent lockouts.
+- Validates JSON files using a strict schema check and supports dry-run validation using simulated Prisma transaction rollbacks.
+
+### Testing & Verification
+- `npm run build` completed successfully without any compilation errors.
+- Verified dry-run restores, missing user handling, and CSV formats.
+
+---
+
+## Phase 10A — NOT Started
 
 Awaiting user approval before starting the next phase.
