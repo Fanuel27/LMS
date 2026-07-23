@@ -1,6 +1,7 @@
 const prisma = require('../config/db');
 const { sendSuccess } = require('../utils/response');
 const notificationService = require('../services/notification.service');
+const auditLogService = require('../services/auditLog.service');
 
 // ─── GET /api/student/stats ───────────────────────────────────────────────────
 exports.getStats = async (req, res, next) => {
@@ -242,6 +243,15 @@ exports.startPracticeSession = async (req, res, next) => {
       }
     });
 
+    auditLogService.log({
+      userId: studentId,
+      action: 'START_PRACTICE',
+      entityType: 'PracticeSession',
+      entityId: session.id,
+      description: `Started ${mode.toLowerCase()} practice session`,
+      req
+    });
+
     return sendSuccess(res, { session, questions }, 'Practice session started.');
   } catch (err) {
     next(err);
@@ -327,6 +337,15 @@ exports.finishPracticeSession = async (req, res, next) => {
       `You completed a practice session with an accuracy of ${accuracy.toFixed(2)}%.`,
       'INFO'
     );
+
+    auditLogService.log({
+      userId: studentId,
+      action: 'FINISH_PRACTICE',
+      entityType: 'PracticeSession',
+      entityId: id,
+      description: `Finished practice session with ${accuracy.toFixed(2)}% accuracy`,
+      req
+    });
 
     return sendSuccess(res, null, 'Session finished successfully.');
   } catch (err) {
@@ -560,6 +579,15 @@ exports.startMockExam = async (req, res, next) => {
       }
     });
 
+    auditLogService.log({
+      userId: studentId,
+      action: 'START_MOCK_EXAM',
+      entityType: 'Attempt',
+      entityId: attempt.id,
+      description: `Started mock exam: ${exam.title}`,
+      req
+    });
+
     return sendSuccess(res, { attemptId: attempt.id, startedAt: attempt.startedAt }, 'Exam started successfully.');
   } catch (err) {
     next(err);
@@ -635,6 +663,15 @@ exports.submitMockExam = async (req, res, next) => {
       `You scored ${percentage.toFixed(2)}% on "${exam.title}". ${passed ? 'Great job!' : 'Keep practicing!'}`,
       passed ? 'SUCCESS' : 'INFO'
     );
+
+    auditLogService.log({
+      userId: studentId,
+      action: 'SUBMIT_MOCK_EXAM',
+      entityType: 'Attempt',
+      entityId: attemptId,
+      description: `Submitted mock exam "${exam.title}" with score ${percentage.toFixed(2)}%`,
+      req
+    });
 
     return sendSuccess(res, {
       score: updatedAttempt.score,

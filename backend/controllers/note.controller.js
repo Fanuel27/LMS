@@ -4,6 +4,7 @@ const prisma = require('../config/db');
 const { sendSuccess, sendError } = require('../utils/response');
 const { createNoteSchema, updateNoteSchema } = require('../validators/note.validator');
 const notificationService = require('../services/notification.service');
+const auditLogService = require('../services/auditLog.service');
 
 // Helper to delete old file
 const deleteFile = (filename) => {
@@ -137,6 +138,15 @@ exports.createNote = async (req, res, next) => {
       'SUCCESS'
     );
 
+    auditLogService.log({
+      userId: teacherId,
+      action: 'CREATE_NOTE',
+      entityType: 'Note',
+      entityId: note.id,
+      description: `Uploaded note ${note.title}`,
+      req
+    });
+
     return sendSuccess(res, note, 'Note created successfully.', 201);
   } catch (err) {
     // If validation or DB fails, clean up the uploaded file
@@ -184,6 +194,15 @@ exports.updateNote = async (req, res, next) => {
       },
     });
 
+    auditLogService.log({
+      userId: teacherId,
+      action: 'UPDATE_NOTE',
+      entityType: 'Note',
+      entityId: id,
+      description: `Updated note ${updatedNote.title}`,
+      req
+    });
+
     return sendSuccess(res, updatedNote, 'Note updated successfully.');
   } catch (err) {
     if (req.file) deleteFile(req.file.filename);
@@ -212,6 +231,15 @@ exports.deleteNote = async (req, res, next) => {
     // Delete from DB
     await prisma.note.delete({
       where: { id },
+    });
+
+    auditLogService.log({
+      userId: teacherId,
+      action: 'DELETE_NOTE',
+      entityType: 'Note',
+      entityId: id,
+      description: `Deleted note ${id}`,
+      req
     });
 
     return sendSuccess(res, null, 'Note deleted successfully.');

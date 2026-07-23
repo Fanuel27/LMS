@@ -1,6 +1,7 @@
 const { loginSchema } = require('../validators/auth.validator');
 const { loginUser, getProfile } = require('../services/auth.service');
 const { sendSuccess, sendError } = require('../utils/response');
+const auditLogService = require('../services/auditLog.service');
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -26,6 +27,15 @@ const login = async (req, res, next) => {
     // Set httpOnly cookie
     res.cookie('token', token, COOKIE_OPTIONS);
 
+    auditLogService.log({
+      userId: user.id,
+      action: 'LOGIN',
+      entityType: 'User',
+      entityId: user.id,
+      description: `User logged in as ${role}`,
+      req
+    });
+
     return sendSuccess(res, { user, token }, 'Login successful.');
   } catch (err) {
     if (err.statusCode) {
@@ -39,6 +49,17 @@ const login = async (req, res, next) => {
  * POST /api/auth/logout
  */
 const logout = (req, res) => {
+  if (req.user) {
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'LOGOUT',
+      entityType: 'User',
+      entityId: req.user.id,
+      description: 'User logged out',
+      req
+    });
+  }
+
   res.clearCookie('token', { ...COOKIE_OPTIONS, maxAge: 0 });
   return sendSuccess(res, null, 'Logged out successfully.');
 };

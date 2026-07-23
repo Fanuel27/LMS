@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { promisify } = require('util');
+const auditLogService = require('../services/auditLog.service');
 
 const DEFAULT_SETTINGS = {
   platformName: 'National Exam Prep',
@@ -135,6 +136,15 @@ exports.updateSettings = async (req, res, next) => {
 
     await Promise.all(updatePromises);
     
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'UPDATE_SETTINGS',
+      entityType: 'SystemSetting',
+      entityId: null,
+      description: 'System settings updated',
+      req
+    });
+
     const settings = await prisma.systemSetting.findMany();
     return sendSuccess(res, formatSettings(settings), 'Settings updated successfully');
   } catch (err) {
@@ -153,6 +163,15 @@ exports.resetSettings = async (req, res, next) => {
     });
 
     await Promise.all(updatePromises);
+
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'RESET_SETTINGS',
+      entityType: 'SystemSetting',
+      entityId: null,
+      description: 'System settings reset to default',
+      req
+    });
 
     const settings = await prisma.systemSetting.findMany();
     return sendSuccess(res, formatSettings(settings), 'Settings reset to default successfully');

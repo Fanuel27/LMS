@@ -2,6 +2,7 @@ const prisma = require('../config/db');
 const { sendSuccess, sendError } = require('../utils/response');
 const { createMockExamSchema, updateMockExamSchema } = require('../validators/mockExam.validator');
 const notificationService = require('../services/notification.service');
+const auditLogService = require('../services/auditLog.service');
 
 // ─── GET /api/mock-exams ──────────────────────────────────────────────────────
 exports.getMockExams = async (req, res, next) => {
@@ -141,6 +142,15 @@ exports.createMockExam = async (req, res, next) => {
       await notificationService.notifyUser(teacherId, 'Mock Exam Published', `Your mock exam "${newExam.title}" is now published.`, 'SUCCESS');
     }
 
+    auditLogService.log({
+      userId: teacherId,
+      action: 'CREATE_MOCK_EXAM',
+      entityType: 'MockExam',
+      entityId: newExam.id,
+      description: `Created mock exam ${newExam.title}`,
+      req
+    });
+
     return sendSuccess(res, newExam, 'Mock exam created successfully.', 201);
   } catch (err) {
     next(err);
@@ -214,6 +224,33 @@ exports.updateMockExam = async (req, res, next) => {
     if (updatedExam.isActive && !existing.isActive) {
       await notificationService.notifyRole('STUDENT', 'New Mock Exam Published', `A new mock exam "${updatedExam.title}" is now available for ${updatedExam.subject.name}.`, 'INFO');
       await notificationService.notifyUser(teacherId, 'Mock Exam Published', `Your mock exam "${updatedExam.title}" is now published.`, 'SUCCESS');
+      
+      auditLogService.log({
+        userId: teacherId,
+        action: 'ACTIVATE_MOCK_EXAM',
+        entityType: 'MockExam',
+        entityId: id,
+        description: `Activated mock exam ${updatedExam.title}`,
+        req
+      });
+    } else if (!updatedExam.isActive && existing.isActive) {
+      auditLogService.log({
+        userId: teacherId,
+        action: 'DEACTIVATE_MOCK_EXAM',
+        entityType: 'MockExam',
+        entityId: id,
+        description: `Deactivated mock exam ${updatedExam.title}`,
+        req
+      });
+    } else {
+      auditLogService.log({
+        userId: teacherId,
+        action: 'UPDATE_MOCK_EXAM',
+        entityType: 'MockExam',
+        entityId: id,
+        description: `Updated mock exam ${updatedExam.title}`,
+        req
+      });
     }
 
     return sendSuccess(res, updatedExam, 'Mock exam updated successfully.');
@@ -241,6 +278,15 @@ exports.deleteMockExam = async (req, res, next) => {
 
     await prisma.mockExam.delete({
       where: { id },
+    });
+
+    auditLogService.log({
+      userId: teacherId,
+      action: 'DELETE_MOCK_EXAM',
+      entityType: 'MockExam',
+      entityId: id,
+      description: `Deleted mock exam ${id}`,
+      req
     });
 
     return sendSuccess(res, null, 'Mock exam deleted successfully.');

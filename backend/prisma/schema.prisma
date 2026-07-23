@@ -47,6 +47,7 @@ model User {
   practiceAttempts PracticeAttempt[]
   practiceSessions PracticeSession[]
   notifications    Notification[]
+  auditLogs        AuditLog[]
 
   @@index([email])
   @@index([role])
@@ -267,4 +268,26 @@ model SystemSetting {
   updatedAt   DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  description String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+
+  @@map("audit_logs")
 }

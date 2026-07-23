@@ -18,6 +18,7 @@ const noteRoutes = require('./routes/note.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const adminRoutes = require('./routes/admin.routes');
 const systemSettingsRoutes = require('./routes/systemSettings.routes');
+const auditLogRoutes = require('./routes/auditLog.routes');
 const { errorHandler, notFoundHandler } = require('./middleware/error.middleware');
 
 const app = express();
@@ -92,6 +93,7 @@ app.use('/api/student', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/settings', systemSettingsRoutes);
+app.use('/api/admin/audit-logs', auditLogRoutes);
 
 // ─── Error Handling (must be last) ────────────────────────────────────────────
 app.use(notFoundHandler);

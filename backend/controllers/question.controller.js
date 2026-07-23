@@ -2,6 +2,7 @@ const prisma = require('../config/db');
 const { sendSuccess, sendError } = require('../utils/response');
 const { createQuestionSchema } = require('../validators/question.validator');
 const notificationService = require('../services/notification.service');
+const auditLogService = require('../services/auditLog.service');
 
 // ─── GET /api/questions ───────────────────────────────────────────────────────
 exports.getQuestions = async (req, res, next) => {
@@ -102,6 +103,15 @@ exports.createQuestion = async (req, res, next) => {
 
     await notificationService.notifyUser(teacherId, 'Question Created', `Your question was created successfully.`, 'SUCCESS');
 
+    auditLogService.log({
+      userId: teacherId,
+      action: 'CREATE_QUESTION',
+      entityType: 'Question',
+      entityId: question.id,
+      description: `Created a new question in subject ${question.subject.name}`,
+      req
+    });
+
     return sendSuccess(res, question, 'Question created successfully.', 201);
   } catch (err) {
     next(err);
@@ -135,6 +145,15 @@ exports.updateQuestion = async (req, res, next) => {
 
     await notificationService.notifyUser(teacherId, 'Question Updated', `Your question was updated successfully.`, 'SUCCESS');
 
+    auditLogService.log({
+      userId: teacherId,
+      action: 'UPDATE_QUESTION',
+      entityType: 'Question',
+      entityId: id,
+      description: `Updated question ${id}`,
+      req
+    });
+
     return sendSuccess(res, updatedQuestion, 'Question updated successfully.');
   } catch (err) {
     next(err);
@@ -161,6 +180,15 @@ exports.deleteQuestion = async (req, res, next) => {
     });
 
     await notificationService.notifyUser(teacherId, 'Question Deleted', `Your question was deleted successfully.`, 'INFO');
+
+    auditLogService.log({
+      userId: teacherId,
+      action: 'DELETE_QUESTION',
+      entityType: 'Question',
+      entityId: id,
+      description: `Deleted question ${id}`,
+      req
+    });
 
     return sendSuccess(res, null, 'Question deleted successfully.');
   } catch (err) {

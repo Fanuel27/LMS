@@ -1,6 +1,7 @@
 const prisma = require('../config/db');
 const { sendSuccess } = require('../utils/response');
 const notificationService = require('../services/notification.service');
+const auditLogService = require('../services/auditLog.service');
 
 // ─── GET /api/notifications ───────────────────────────────────────────────────
 exports.getNotifications = async (req, res, next) => {
@@ -130,6 +131,16 @@ exports.createAnnouncement = async (req, res, next) => {
     }
 
     const announcement = await notificationService.createAnnouncement(title, message, type);
+    
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'CREATE_ANNOUNCEMENT',
+      entityType: 'Notification',
+      entityId: announcement.id,
+      description: `Created announcement: ${title}`,
+      req
+    });
+
     return sendSuccess(res, announcement, 'Announcement created successfully.', 201);
   } catch (err) {
     next(err);
@@ -208,6 +219,15 @@ exports.updateAnnouncement = async (req, res, next) => {
       data: { title, message, type: type || existing.type, createdAt: new Date() },
     });
 
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'UPDATE_ANNOUNCEMENT',
+      entityType: 'Notification',
+      entityId: id,
+      description: `Updated announcement: ${title}`,
+      req
+    });
+
     return sendSuccess(res, updated, 'Announcement updated successfully.');
   } catch (err) {
     next(err);
@@ -228,6 +248,15 @@ exports.deleteAdminAnnouncement = async (req, res, next) => {
     }
 
     await prisma.notification.delete({ where: { id } });
+
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'DELETE_ANNOUNCEMENT',
+      entityType: 'Notification',
+      entityId: id,
+      description: `Deleted announcement: ${existing.title}`,
+      req
+    });
 
     return sendSuccess(res, null, 'Announcement deleted successfully.');
   } catch (err) {

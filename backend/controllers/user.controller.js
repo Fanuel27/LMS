@@ -9,6 +9,7 @@ const { comparePassword } = require('../utils/passwordUtils');
 const { sendSuccess, sendError, sendPaginated } = require('../utils/response');
 const prisma = require('../config/db');
 const notificationService = require('../services/notification.service');
+const auditLogService = require('../services/auditLog.service');
 
 // ─── Admin: Manage all users ───────────────────────────────────────────────
 
@@ -71,6 +72,15 @@ const createUser = (role) => async (req, res, next) => {
     
     await notificationService.notifyRole('ADMIN', `${role.charAt(0) + role.slice(1).toLowerCase()} Account Created`, `${user.fullName} (${user.email}) was created.`, 'INFO');
 
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'CREATE_USER',
+      entityType: 'User',
+      entityId: user.id,
+      description: `Created new ${role.toLowerCase()}: ${user.fullName}`,
+      req
+    });
+
     return sendSuccess(res, user, `${role.charAt(0) + role.slice(1).toLowerCase()} created successfully.`, 201);
   } catch (err) {
     if (err.statusCode) return sendError(res, err.message, err.statusCode);
@@ -98,6 +108,24 @@ const updateUser = async (req, res, next) => {
       const status = user.isActive ? 'activated' : 'deactivated';
       const roleStr = user.role.charAt(0) + user.role.slice(1).toLowerCase();
       await notificationService.notifyRole('ADMIN', `${roleStr} Account ${status.charAt(0).toUpperCase() + status.slice(1)}`, `${user.fullName} was ${status}.`, 'INFO');
+      
+      auditLogService.log({
+        userId: req.user.id,
+        action: user.isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
+        entityType: 'User',
+        entityId: user.id,
+        description: `${status.charAt(0).toUpperCase() + status.slice(1)} user ${user.fullName}`,
+        req
+      });
+    } else {
+      auditLogService.log({
+        userId: req.user.id,
+        action: 'UPDATE_USER',
+        entityType: 'User',
+        entityId: user.id,
+        description: `Updated user ${user.fullName}`,
+        req
+      });
     }
 
     return sendSuccess(res, user, 'User updated successfully.');
@@ -118,6 +146,16 @@ const deleteUser = async (req, res, next) => {
     }
 
     await userService.deleteUser(req.params.id);
+    
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'DELETE_USER',
+      entityType: 'User',
+      entityId: req.params.id,
+      description: `Deleted user with ID ${req.params.id}`,
+      req
+    });
+
     return sendSuccess(res, null, 'User deleted successfully.');
   } catch (err) {
     if (err.statusCode) return sendError(res, err.message, err.statusCode);
@@ -136,6 +174,16 @@ const resetPassword = async (req, res, next) => {
     }
 
     await userService.resetUserPassword(req.params.id, parsed.data.newPassword);
+    
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'RESET_PASSWORD',
+      entityType: 'User',
+      entityId: req.params.id,
+      description: `Reset password for user ID ${req.params.id}`,
+      req
+    });
+
     return sendSuccess(res, null, 'Password reset successfully.');
   } catch (err) {
     if (err.statusCode) return sendError(res, err.message, err.statusCode);
@@ -158,6 +206,16 @@ const updateProfile = async (req, res, next) => {
     // Only allow fullName and email changes on own profile
     const { fullName, email } = parsed.data;
     const user = await userService.updateUser(req.user.id, { fullName, email });
+    
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'UPDATE_PROFILE',
+      entityType: 'User',
+      entityId: req.user.id,
+      description: 'User updated their profile',
+      req
+    });
+
     return sendSuccess(res, user, 'Profile updated successfully.');
   } catch (err) {
     if (err.statusCode) return sendError(res, err.message, err.statusCode);
@@ -182,6 +240,16 @@ const changePassword = async (req, res, next) => {
     }
 
     await userService.changeOwnPassword(req.user.id, parsed.data.newPassword);
+    
+    auditLogService.log({
+      userId: req.user.id,
+      action: 'CHANGE_PASSWORD',
+      entityType: 'User',
+      entityId: req.user.id,
+      description: 'User changed their password',
+      req
+    });
+
     return sendSuccess(res, null, 'Password changed successfully.');
   } catch (err) {
     if (err.statusCode) return sendError(res, err.message, err.statusCode);
