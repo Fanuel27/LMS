@@ -172,6 +172,49 @@ Phase 8A implements a comprehensive, read-only analytics dashboard for Administr
 
 ---
 
-## Phase 8B — NOT Started
+## Phase 8B — COMPLETED
+**Admin System Settings & Platform Configuration**
+
+Phase 8B introduces a centralized interface for Administrators to manage platform-wide configuration, academic settings, security preferences, and system information without modifying source code.
+
+### Files Created
+1. `backend/controllers/systemSettings.controller.js`
+2. `backend/routes/systemSettings.routes.js`
+3. `frontend/src/services/systemSettings.service.js`
+4. `frontend/src/pages/admin/AdminSystemSettingsPage.jsx`
+
+### Files Modified
+1. `backend/prisma/schema.prisma` — Added `SystemSetting` model.
+2. `backend/server.js` — Registered `/api/admin/settings` routes.
+3. `frontend/src/layouts/AdminLayout.jsx` — Added System Settings to the sidebar navigation.
+4. `frontend/src/routes/index.jsx` — Registered the `/admin/settings` route.
+
+### Database Changes
+- Generated a new migration `add_system_settings` using `npx prisma migrate dev`.
+- Added the `SystemSetting` table to store arbitrary key-value pairs (`key`, `value`, `description`).
+
+### Backend Changes (API Endpoints Added)
+- `GET /api/admin/settings` — Returns all system settings (auto-initializes defaults if empty).
+- `PUT /api/admin/settings` — Updates one or multiple settings dynamically.
+- `POST /api/admin/settings/reset` — Resets all settings back to factory defaults.
+- `GET /api/admin/settings/info` — Retrieves read-only System Information (versions, DB provider, storage, counts).
+
+### Frontend Changes
+- Constructed `AdminSystemSettingsPage.jsx` utilizing Lucide icons and Shadcn UI components (Cards, Inputs, Switch styling).
+- Categorized settings into vertical tabs: General, Examination, Notifications, Security, System Info.
+- Implemented robust read-only display for System Stats alongside editable forms with React Query mutations.
+- Bound optimistic cache invalidation post-update.
+
+### Testing & Verification
+- `npm run build` completed successfully without any compilation errors.
+- Verified that default values are correctly parsed and cast (Boolean/Number/String) before shipping to the client.
+- Confirmed backward compatibility; no business logic was modified.
+
+### Known Issues
+- None.
+
+---
+
+## Phase 9A — NOT Started
 
 Awaiting user approval before starting the next phase.

@@ -14,6 +14,7 @@ const navItems = [
     items: [
       { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/admin/analytics', label: 'Analytics', icon: LineChart },
+      { to: '/admin/settings', label: 'System Settings', icon: Settings },
     ],
   },
   {
@@ -36,6 +37,7 @@ const navItems = [
 function UserDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const navigate = useNavigate()
 
   // Close on outside click
   useEffect(() => {
@@ -89,16 +91,18 @@ function UserDropdown({ user, onLogout }) {
           <div className="py-1">
             <button
               role="menuitem"
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+              disabled
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => { setOpen(false) }}
+              title="Profile coming soon"
             >
               <User className="w-4 h-4 text-muted-foreground" />
-              Profile
+              Profile (Coming Soon)
             </button>
             <button
               role="menuitem"
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-              onClick={() => { setOpen(false) }}
+              onClick={() => { setOpen(false); navigate('/admin/settings'); }}
             >
               <Settings className="w-4 h-4 text-muted-foreground" />
               Settings
