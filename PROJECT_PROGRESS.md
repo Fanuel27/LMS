@@ -269,6 +269,49 @@ Phase 9B provides administrators with tools to export platform data (CSV), creat
 
 ---
 
-## Phase 10A — NOT Started
+## Phase 10A — COMPLETED
+**Public Landing Page Polish & Contact System**
+
+Phase 10A modernizes the public landing page with a premium light theme and implements a robust Contact Us system for visitors to reach administrators directly.
+
+### Files Created
+1. `backend/controllers/contact.controller.js`
+2. `backend/routes/contact.routes.js`
+3. `backend/routes/adminContact.routes.js`
+4. `frontend/src/services/contact.service.js`
+5. `frontend/src/pages/admin/AdminContactMessagesPage.jsx`
+
+### Files Modified
+1. `backend/prisma/schema.prisma` — Added `ContactMessage` model.
+2. `backend/server.js` — Mounted `/api/contact` and `/api/admin/contact` routes.
+3. `frontend/src/routes/index.jsx` — Registered the `/admin/contact-messages` route.
+4. `frontend/src/layouts/AdminLayout.jsx` — Added Contact Messages to the sidebar.
+5. `frontend/src/components/landing/ContactSection.jsx` — Replaced dummy form with functional React form.
+6. `frontend/src/components/landing/HeroSection.jsx` — Redesigned with a modern, light aesthetic.
+
+### Database Changes
+- Generated a new migration `add_contact_messages` using `npx prisma migrate dev`.
+- Added the `ContactMessage` table.
+
+### Backend Changes (API Endpoints Added)
+- `POST /api/contact` — Public endpoint to submit contact messages.
+- `GET /api/admin/contact` — Admin endpoint to fetch messages (supports pagination, search, status filtering).
+- `GET /api/admin/contact/:id` — Admin endpoint to view a single message.
+- `PUT /api/admin/contact/:id/read` — Admin endpoint to mark a message as read.
+- `DELETE /api/admin/contact/:id` — Admin endpoint to permanently delete a message.
+
+### Core Features
+- **Notifications**: Notifies all Admins automatically when a new message is submitted.
+- **Audit Logs**: Logs `CONTACT_MESSAGE_CREATED`, `CONTACT_MESSAGE_READ`, and `CONTACT_MESSAGE_DELETED`.
+- **UI Design**: Landing Page redesigned with premium contrast, shadow depths, and light gradients.
+- **Message Management**: Admins can view unread badges, filter by status, read without automatically marking as read, and delete with confirmation dialogs.
+
+### Testing & Verification
+- `npm run build` completed successfully without any compilation errors.
+- Verified form validation, database saves, and admin dashboard controls.
+
+---
+
+## Phase 10B — NOT Started
 
 Awaiting user approval before starting the next phase.

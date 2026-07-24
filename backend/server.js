@@ -20,6 +20,8 @@ const adminRoutes = require('./routes/admin.routes');
 const systemSettingsRoutes = require('./routes/systemSettings.routes');
 const auditLogRoutes = require('./routes/auditLog.routes');
 const backupRoutes = require('./routes/backup.routes');
+const contactRoutes = require('./routes/contact.routes');
+const adminContactRoutes = require('./routes/adminContact.routes');
 const { errorHandler, notFoundHandler } = require('./middleware/error.middleware');
 
 const app = express();
@@ -96,6 +98,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/settings', systemSettingsRoutes);
 app.use('/api/admin/audit-logs', auditLogRoutes);
 app.use('/api/admin/backups', backupRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/admin/contact', adminContactRoutes);
 
 // ─── Error Handling (must be last) ────────────────────────────────────────────
 app.use(notFoundHandler);

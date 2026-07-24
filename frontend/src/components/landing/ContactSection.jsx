@@ -4,6 +4,9 @@ import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
+import { useToast } from '@/hooks/useToast'
+import { Toaster } from '@/components/ui/Toaster'
+import { contactService } from '@/services/contact.service'
 
 function FormField({ id, label, icon: Icon, error, children }) {
   return (
@@ -21,16 +24,22 @@ function FormField({ id, label, icon: Icon, error, children }) {
 export default function ContactSection() {
   const [submitted, setSubmitted] = useState(false)
   const [sending, setSending] = useState(false)
+  const { toasts, toast } = useToast()
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm()
 
   const onSubmit = async (data) => {
+    if (sending) return;
     setSending(true)
-    // Simulate an async submission — replace with real API call in Phase 3+
-    await new Promise((r) => setTimeout(r, 1200))
-    setSending(false)
-    setSubmitted(true)
-    reset()
+    try {
+      await contactService.submitContact(data)
+      setSubmitted(true)
+      reset()
+    } catch (err) {
+      toast({ title: 'Submission Failed', description: err.response?.data?.message || 'Something went wrong.', variant: 'destructive' })
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -103,23 +112,13 @@ export default function ContactSection() {
                   className="space-y-5"
                   noValidate
                 >
-                  {/* Name */}
-                  <FormField id="contact-name" label="Your Name" icon={User} error={errors.name}>
+                  {/* Full Name */}
+                  <FormField id="contact-fullname" label="Full Name" icon={User} error={errors.fullName}>
                     <Input
-                      id="contact-name"
+                      id="contact-fullname"
                       placeholder="Abebe Girma"
                       disabled={sending}
-                      {...register('name', { required: 'Name is required.' })}
-                    />
-                  </FormField>
-
-                  {/* School */}
-                  <FormField id="contact-school" label="School Name" icon={School} error={errors.school}>
-                    <Input
-                      id="contact-school"
-                      placeholder="Addis Ababa Secondary School"
-                      disabled={sending}
-                      {...register('school', { required: 'School name is required.' })}
+                      {...register('fullName', { required: 'Full Name is required.' })}
                     />
                   </FormField>
 
@@ -137,6 +136,16 @@ export default function ContactSection() {
                           message: 'Please enter a valid email.',
                         },
                       })}
+                    />
+                  </FormField>
+
+                  {/* Subject */}
+                  <FormField id="contact-subject" label="Subject" icon={MessageSquare} error={errors.subject}>
+                    <Input
+                      id="contact-subject"
+                      placeholder="How can we help you?"
+                      disabled={sending}
+                      {...register('subject', { required: 'Subject is required.' })}
                     />
                   </FormField>
 
@@ -176,6 +185,7 @@ export default function ContactSection() {
           </div>
         </div>
       </div>
+      <Toaster toasts={toasts} />
     </section>
   )
 }
