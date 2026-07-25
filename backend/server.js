@@ -3,10 +3,22 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+
+// ─── Process Error Handling ───────────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
 
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
@@ -28,17 +40,36 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ─── Security Middleware ──────────────────────────────────────────────────────
+const isProd = process.env.NODE_ENV === 'production';
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow frontend to fetch uploaded files
+  contentSecurityPolicy: isProd ? undefined : false, // relax CSP in dev if needed
 }));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests) only in dev
+    if (!origin && !isProd) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || (!isProd && origin?.includes('localhost'))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true, // allow cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// ─── Compression ──────────────────────────────────────────────────────────────
+app.use(compression());
 
 // ─── Request Logging ──────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {

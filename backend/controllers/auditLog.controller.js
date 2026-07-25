@@ -1,5 +1,5 @@
 const prisma = require('../config/db');
-const { sendSuccess } = require('../utils/response');
+const { sendSuccess, sendError } = require('../utils/response');
 
 exports.getAuditLogs = async (req, res, next) => {
   try {
@@ -108,7 +108,7 @@ exports.getAuditLogById = async (req, res, next) => {
     });
 
     if (!log) {
-      return res.status(404).json({ success: false, message: 'Audit log not found' });
+      return sendError(res, 'Audit log not found.', 404);
     }
 
     return sendSuccess(res, log);

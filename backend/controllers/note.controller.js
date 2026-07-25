@@ -9,7 +9,12 @@ const auditLogService = require('../services/auditLog.service');
 // Helper to delete old file
 const deleteFile = (filename) => {
   if (!filename) return;
-  const filePath = path.join(__dirname, '..', process.env.UPLOAD_PATH || 'uploads', filename);
+  // Sanitize to prevent path traversal
+  const safeFilename = path.basename(filename);
+  const uploadBase = path.resolve(__dirname, '..', process.env.UPLOAD_PATH || 'uploads');
+  const filePath = path.join(uploadBase, safeFilename);
+  // Only delete if within uploads directory
+  if (!filePath.startsWith(uploadBase + path.sep)) return;
   if (fs.existsSync(filePath)) {
     try {
       fs.unlinkSync(filePath);
@@ -261,8 +266,16 @@ exports.downloadNotePdf = async (req, res, next) => {
       return sendError(res, 'Note not found or you do not have access.', 404);
     }
 
-    const filePath = path.join(__dirname, '..', process.env.UPLOAD_PATH || 'uploads', note.pdfFile);
-    
+    // Sanitize stored filename to prevent directory traversal
+    const safeFilename = path.basename(note.pdfFile);
+    const uploadBase = path.resolve(__dirname, '..', process.env.UPLOAD_PATH || 'uploads');
+    const filePath = path.join(uploadBase, safeFilename);
+
+    // Ensure the resolved path is still within the uploads directory
+    if (!filePath.startsWith(uploadBase + path.sep) && filePath !== uploadBase) {
+      return sendError(res, 'Invalid file path.', 400);
+    }
+
     if (!fs.existsSync(filePath)) {
       return sendError(res, 'File not found on the server.', 404);
     }

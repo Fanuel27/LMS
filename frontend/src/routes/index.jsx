@@ -1,45 +1,58 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
+import React, { Suspense } from 'react'
+import { Loader2 } from 'lucide-react'
 
-// Auth pages
+// Auth pages (eager loaded for fast initial render)
 import AdminLoginPage from '@/pages/auth/AdminLoginPage'
 import TeacherLoginPage from '@/pages/auth/TeacherLoginPage'
 import StudentLoginPage from '@/pages/auth/StudentLoginPage'
+import LandingPage from '@/pages/public/LandingPage'
 
-// Admin pages
-import AdminDashboard from '@/pages/admin/AdminDashboard'
-import AdminStudentsPage from '@/pages/admin/AdminStudentsPage'
-import AdminTeachersPage from '@/pages/admin/AdminTeachersPage'
-import AdminAnnouncementsPage from '@/pages/admin/AdminAnnouncementsPage'
-import AdminAnalyticsPage from '@/pages/admin/AdminAnalyticsPage'
-import AdminSystemSettingsPage from '@/pages/admin/AdminSystemSettingsPage'
-import AdminAuditLogsPage from '@/pages/admin/AdminAuditLogsPage'
-import AdminBackupsPage from '@/pages/admin/AdminBackupsPage'
-import AdminContactMessagesPage from '@/pages/admin/AdminContactMessagesPage'
-
-// Teacher / Student dashboard stubs
-import TeacherDashboard from '@/pages/teacher/TeacherDashboard'
-import TeacherSubjectsPage from '@/pages/teacher/TeacherSubjectsPage'
-import TeacherQuestionsPage from '@/pages/teacher/TeacherQuestionsPage'
-import TeacherNotesPage from '@/pages/teacher/TeacherNotesPage'
-import TeacherMockExamsPage from '@/pages/teacher/TeacherMockExamsPage'
-import TeacherAnalyticsPage from '@/pages/teacher/TeacherAnalyticsPage'
-import StudentDashboard from '@/pages/student/StudentDashboard'
-import StudentSubjectsPage from '@/pages/student/StudentSubjectsPage'
-import StudentPracticePage from '@/pages/student/StudentPracticePage'
-import StudentNotesPage from '@/pages/student/StudentNotesPage'
-import StudentExamsPage from '@/pages/student/StudentExamsPage'
-import StudentProgressPage from '@/pages/student/StudentProgressPage'
-import StudentProfilePage from '@/pages/student/StudentProfilePage'
-
-// Layouts
+// Layouts (eager loaded)
 import AdminLayout from '@/layouts/AdminLayout'
 import TeacherLayout from '@/layouts/TeacherLayout'
 import StudentLayout from '@/layouts/StudentLayout'
 
-// Public landing
-import LandingPage from '@/pages/public/LandingPage'
+// ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
+// Admin pages
+const AdminDashboard = React.lazy(() => import('@/pages/admin/AdminDashboard'))
+const AdminStudentsPage = React.lazy(() => import('@/pages/admin/AdminStudentsPage'))
+const AdminTeachersPage = React.lazy(() => import('@/pages/admin/AdminTeachersPage'))
+const AdminAnnouncementsPage = React.lazy(() => import('@/pages/admin/AdminAnnouncementsPage'))
+const AdminAnalyticsPage = React.lazy(() => import('@/pages/admin/AdminAnalyticsPage'))
+const AdminSystemSettingsPage = React.lazy(() => import('@/pages/admin/AdminSystemSettingsPage'))
+const AdminAuditLogsPage = React.lazy(() => import('@/pages/admin/AdminAuditLogsPage'))
+const AdminBackupsPage = React.lazy(() => import('@/pages/admin/AdminBackupsPage'))
+const AdminContactMessagesPage = React.lazy(() => import('@/pages/admin/AdminContactMessagesPage'))
+const AdminProfilePage = React.lazy(() => import('@/pages/admin/AdminProfilePage'))
+
+// Teacher / Student dashboard pages
+const TeacherDashboard = React.lazy(() => import('@/pages/teacher/TeacherDashboard'))
+const TeacherSubjectsPage = React.lazy(() => import('@/pages/teacher/TeacherSubjectsPage'))
+const TeacherQuestionsPage = React.lazy(() => import('@/pages/teacher/TeacherQuestionsPage'))
+const TeacherNotesPage = React.lazy(() => import('@/pages/teacher/TeacherNotesPage'))
+const TeacherMockExamsPage = React.lazy(() => import('@/pages/teacher/TeacherMockExamsPage'))
+const TeacherAnalyticsPage = React.lazy(() => import('@/pages/teacher/TeacherAnalyticsPage'))
+
+const StudentDashboard = React.lazy(() => import('@/pages/student/StudentDashboard'))
+const StudentSubjectsPage = React.lazy(() => import('@/pages/student/StudentSubjectsPage'))
+const StudentPracticePage = React.lazy(() => import('@/pages/student/StudentPracticePage'))
+const StudentNotesPage = React.lazy(() => import('@/pages/student/StudentNotesPage'))
+const StudentExamsPage = React.lazy(() => import('@/pages/student/StudentExamsPage'))
+const StudentProgressPage = React.lazy(() => import('@/pages/student/StudentProgressPage'))
+const StudentProfilePage = React.lazy(() => import('@/pages/student/StudentProfilePage'))
+
+// Suspense Fallback Loader
+function PageLoader() {
+  return (
+    <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4">
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      <p className="text-sm text-muted-foreground animate-pulse">Loading module...</p>
+    </div>
+  )
+}
 
 /**
  * RootRedirect — shows landing page for guests, dashboard redirect for authenticated users.
@@ -61,7 +74,8 @@ function RootRedirect() {
 
 export default function AppRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
       {/* ── Public ─────────────────────────────────────────────────────── */}
       <Route path="/" element={<RootRedirect />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -87,6 +101,7 @@ export default function AppRoutes() {
         <Route path="audit-logs" element={<AdminAuditLogsPage />} />
         <Route path="backups" element={<AdminBackupsPage />} />
         <Route path="contact-messages" element={<AdminContactMessagesPage />} />
+        <Route path="profile" element={<AdminProfilePage />} />
       </Route>
 
       {/* ── Teacher — protected ─────────────────────────────────────────── */}
@@ -129,5 +144,6 @@ export default function AppRoutes() {
       {/* ── Catch-all ───────────────────────────────────────────────────── */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }

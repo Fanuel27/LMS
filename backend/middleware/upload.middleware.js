@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { sendError } = require('../utils/response');
 
 // Ensure upload directory exists
@@ -9,15 +10,21 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+// Allowed MIME types and their safe extensions
+const ALLOWED_MIME_TYPES = {
+  'application/pdf': '.pdf',
+};
+
 // Storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `note-${uniqueSuffix}${ext}`);
+    // Use crypto for stronger uniqueness, strip any path-traversal sequences
+    const randomSuffix = crypto.randomBytes(16).toString('hex');
+    const ext = ALLOWED_MIME_TYPES[file.mimetype] || '.bin';
+    cb(null, `note-${Date.now()}-${randomSuffix}${ext}`);
   },
 });
 

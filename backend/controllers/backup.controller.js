@@ -1,5 +1,5 @@
 const backupService = require('../services/backup.service');
-const { sendSuccess } = require('../utils/response');
+const { sendSuccess, sendError } = require('../utils/response');
 const auditLogService = require('../services/auditLog.service');
 const notificationService = require('../services/notification.service');
 
@@ -89,7 +89,7 @@ exports.createBackup = async (req, res, next) => {
 exports.restoreBackup = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No backup file uploaded.' });
+      return sendError(res, 'No backup file uploaded.', 400);
     }
 
     const mode = req.body.mode || 'MERGE';
@@ -99,7 +99,7 @@ exports.restoreBackup = async (req, res, next) => {
     try {
       backupData = JSON.parse(req.file.buffer.toString('utf-8'));
     } catch (e) {
-      return res.status(400).json({ success: false, message: 'Invalid JSON file.' });
+      return sendError(res, 'Invalid JSON file.', 400);
     }
 
     const result = await backupService.restoreBackup(backupData, mode, isDryRun);
@@ -122,12 +122,7 @@ exports.restoreBackup = async (req, res, next) => {
     });
 
     if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        message: 'Restore validation failed or encountered errors.',
-        errors: result.errors,
-        report: result.report
-      });
+      return sendError(res, 'Restore validation failed or encountered errors.', 400, result.errors);
     }
 
     if (!isDryRun) {

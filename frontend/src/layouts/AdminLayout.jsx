@@ -94,13 +94,11 @@ function UserDropdown({ user, onLogout }) {
           <div className="py-1">
             <button
               role="menuitem"
-              disabled
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => { setOpen(false) }}
-              title="Profile coming soon"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+              onClick={() => { setOpen(false); navigate('/admin/profile'); }}
             >
               <User className="w-4 h-4 text-muted-foreground" />
-              Profile (Coming Soon)
+              My Profile
             </button>
             <button
               role="menuitem"

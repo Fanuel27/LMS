@@ -69,7 +69,7 @@ const createUser = (role) => async (req, res, next) => {
     }
 
     const user = await userService.createUser(parsed.data);
-    
+
     await notificationService.notifyRole('ADMIN', `${role.charAt(0) + role.slice(1).toLowerCase()} Account Created`, `${user.fullName} (${user.email}) was created.`, 'INFO');
 
     auditLogService.log({
@@ -108,7 +108,7 @@ const updateUser = async (req, res, next) => {
       const status = user.isActive ? 'activated' : 'deactivated';
       const roleStr = user.role.charAt(0) + user.role.slice(1).toLowerCase();
       await notificationService.notifyRole('ADMIN', `${roleStr} Account ${status.charAt(0).toUpperCase() + status.slice(1)}`, `${user.fullName} was ${status}.`, 'INFO');
-      
+
       auditLogService.log({
         userId: req.user.id,
         action: user.isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
@@ -146,7 +146,7 @@ const deleteUser = async (req, res, next) => {
     }
 
     await userService.deleteUser(req.params.id);
-    
+
     auditLogService.log({
       userId: req.user.id,
       action: 'DELETE_USER',
@@ -174,7 +174,7 @@ const resetPassword = async (req, res, next) => {
     }
 
     await userService.resetUserPassword(req.params.id, parsed.data.newPassword);
-    
+
     auditLogService.log({
       userId: req.user.id,
       action: 'RESET_PASSWORD',
@@ -206,7 +206,7 @@ const updateProfile = async (req, res, next) => {
     // Only allow fullName and email changes on own profile
     const { fullName, email } = parsed.data;
     const user = await userService.updateUser(req.user.id, { fullName, email });
-    
+
     auditLogService.log({
       userId: req.user.id,
       action: 'UPDATE_PROFILE',
@@ -223,9 +223,9 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-/**
- * PUT /api/profile/password
- */
+// /**
+//  * PUT /api/profile/password
+//  */
 const changePassword = async (req, res, next) => {
   try {
     const parsed = changePasswordSchema.safeParse(req.body);
@@ -236,11 +236,11 @@ const changePassword = async (req, res, next) => {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     const isValid = await comparePassword(parsed.data.currentPassword, user.password);
     if (!isValid) {
-      return sendError(res, 'Current password is incorrect.', 401);
+      return sendError(res, 'Current password is incorrect.', 400);//changed 401 to 400 or 422
     }
 
     await userService.changeOwnPassword(req.user.id, parsed.data.newPassword);
-    
+
     auditLogService.log({
       userId: req.user.id,
       action: 'CHANGE_PASSWORD',
@@ -256,6 +256,8 @@ const changePassword = async (req, res, next) => {
     next(err);
   }
 };
+
+
 
 module.exports = {
   getStats,

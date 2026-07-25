@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
-const { sendSuccess } = require('../utils/response');
+const { sendSuccess, sendError } = require('../utils/response');
+const { submitContactSchema } = require('../validators/contact.validator');
 const auditLogService = require('../services/auditLog.service');
 const notificationService = require('../services/notification.service');
 
@@ -7,16 +8,12 @@ const notificationService = require('../services/notification.service');
 
 exports.submitContact = async (req, res, next) => {
   try {
-    const { fullName, email, subject, message } = req.body;
-
-    if (!fullName || !email || !subject || !message) {
-      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    const parsed = submitContactSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendError(res, 'Validation failed.', 422, parsed.error.flatten().fieldErrors);
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ success: false, message: 'Invalid email address.' });
-    }
+    const { fullName, email, subject, message } = parsed.data;
 
     const contactMessage = await prisma.contactMessage.create({
       data: {
@@ -117,7 +114,7 @@ exports.getContactMessageById = async (req, res, next) => {
     });
 
     if (!message) {
-      return res.status(404).json({ success: false, message: 'Message not found.' });
+      return sendError(res, 'Message not found.', 404);
     }
 
     return sendSuccess(res, message, 'Message retrieved successfully.');
@@ -135,7 +132,7 @@ exports.markAsRead = async (req, res, next) => {
     });
 
     if (!existingMessage) {
-      return res.status(404).json({ success: false, message: 'Message not found.' });
+      return sendError(res, 'Message not found.', 404);
     }
 
     const updatedMessage = await prisma.contactMessage.update({
@@ -167,7 +164,7 @@ exports.deleteContactMessage = async (req, res, next) => {
     });
 
     if (!existingMessage) {
-      return res.status(404).json({ success: false, message: 'Message not found.' });
+      return sendError(res, 'Message not found.', 404);
     }
 
     await prisma.contactMessage.delete({

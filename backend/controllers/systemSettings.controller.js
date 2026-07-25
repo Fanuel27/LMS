@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
-const { sendSuccess } = require('../utils/response');
+const { sendSuccess, sendError } = require('../utils/response');
+const { updateSettingsSchema } = require('../validators/systemSettings.validator');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -116,11 +117,12 @@ exports.getSettings = async (req, res, next) => {
 
 exports.updateSettings = async (req, res, next) => {
   try {
-    const updates = req.body;
-    
-    if (!updates || typeof updates !== 'object') {
-      return res.status(400).json({ success: false, message: 'Invalid updates payload' });
+    const parsed = updateSettingsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendError(res, 'Validation failed.', 422, parsed.error.flatten().fieldErrors);
     }
+
+    const updates = parsed.data;
 
     const updatePromises = Object.entries(updates).map(([key, value]) => {
       // Validate that key exists in DEFAULT_SETTINGS to prevent arbitrary key creation

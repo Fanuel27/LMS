@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
-const { sendSuccess } = require('../utils/response');
+const { sendSuccess, sendError } = require('../utils/response');
+const { announcementSchema } = require('../validators/notification.validator');
 const notificationService = require('../services/notification.service');
 const auditLogService = require('../services/auditLog.service');
 
@@ -60,15 +61,15 @@ exports.markRead = async (req, res, next) => {
 
     const notification = await prisma.notification.findUnique({ where: { id } });
     if (!notification) {
-      return res.status(404).json({ success: false, message: 'Notification not found' });
+      return sendError(res, 'Notification not found.', 404);
     }
 
     if (notification.userId === null) {
-      return res.status(400).json({ success: false, message: 'Announcements cannot be marked as read.' });
+      return sendError(res, 'Announcements cannot be marked as read.', 400);
     }
 
     if (notification.userId !== userId) {
-      return res.status(403).json({ success: false, message: 'Forbidden' });
+      return sendError(res, 'Forbidden.', 403);
     }
 
     const updated = await prisma.notification.update({
@@ -104,15 +105,15 @@ exports.deleteNotification = async (req, res, next) => {
 
     const notification = await prisma.notification.findUnique({ where: { id } });
     if (!notification) {
-      return res.status(404).json({ success: false, message: 'Notification not found' });
+      return sendError(res, 'Notification not found.', 404);
     }
 
     if (notification.userId === null) {
-      return res.status(400).json({ success: false, message: 'Announcements cannot be deleted.' });
+      return sendError(res, 'Announcements cannot be deleted.', 400);
     }
 
     if (notification.userId !== userId) {
-      return res.status(403).json({ success: false, message: 'Forbidden' });
+      return sendError(res, 'Forbidden.', 403);
     }
 
     await prisma.notification.delete({ where: { id } });
@@ -125,10 +126,12 @@ exports.deleteNotification = async (req, res, next) => {
 // ─── POST /api/admin/announcements ────────────────────────────────────────────
 exports.createAnnouncement = async (req, res, next) => {
   try {
-    const { title, message, type } = req.body;
-    if (!title || !message) {
-      return res.status(400).json({ success: false, message: 'Title and message are required.' });
+    const parsed = announcementSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendError(res, 'Validation failed.', 422, parsed.error.flatten().fieldErrors);
     }
+
+    const { title, message, type } = parsed.data;
 
     const announcement = await notificationService.createAnnouncement(title, message, type);
     
@@ -200,24 +203,27 @@ exports.getAdminAnnouncements = async (req, res, next) => {
 exports.updateAnnouncement = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, message, type } = req.body;
+    
+    const parsed = announcementSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendError(res, 'Validation failed.', 422, parsed.error.flatten().fieldErrors);
+    }
+
+    const { title, message, type } = parsed.data;
 
     const existing = await prisma.notification.findFirst({
       where: { id, userId: null },
     });
 
     if (!existing) {
-      return res.status(404).json({ success: false, message: 'Announcement not found.' });
-    }
-
-    if (!title || !message) {
-      return res.status(400).json({ success: false, message: 'Title and message are required.' });
+      return sendError(res, 'Announcement not found.', 404);
     }
 
     const updated = await prisma.notification.update({
       where: { id },
       data: { title, message, type: type || existing.type, createdAt: new Date() },
     });
+
 
     auditLogService.log({
       userId: req.user.id,
@@ -244,7 +250,7 @@ exports.deleteAdminAnnouncement = async (req, res, next) => {
     });
 
     if (!existing) {
-      return res.status(404).json({ success: false, message: 'Announcement not found.' });
+      return sendError(res, 'Announcement not found.', 404);
     }
 
     await prisma.notification.delete({ where: { id } });
