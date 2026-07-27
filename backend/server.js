@@ -37,6 +37,7 @@ const adminContactRoutes = require('./routes/adminContact.routes');
 const { errorHandler, notFoundHandler } = require('./middleware/error.middleware');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 // ─── Security Middleware ──────────────────────────────────────────────────────
@@ -48,22 +49,46 @@ app.use(helmet({
 }));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
+// const allowedOrigins = [
+//   process.env.FRONTEND_URL || 'http://localhost:5173',
+// ];
+
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     // Allow requests with no origin (like mobile apps or curl requests) only in dev
+//     if (!origin && !isProd) return callback(null, true);
+
+//     if (allowedOrigins.indexOf(origin) !== -1 || (!isProd && origin?.includes('localhost'))) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true, // allow cookies
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+// }));
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-];
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+].filter(Boolean);
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests) only in dev
-    if (!origin && !isProd) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || (!isProd && origin?.includes('localhost'))) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+  origin(origin, callback) {
+    // Allow requests without an Origin header
+    // (browser address bar, curl, Render health checks)
+    if (!origin) {
+      return callback(null, true);
     }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true, // allow cookies
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
