@@ -152,7 +152,7 @@ export default function NotificationBell() {
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 md:w-96 origin-top-right rounded-md border bg-background shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+        <div className="absolute right-0 mt-2 w-80 md:w-96 origin-top-right rounded-xl border border-border bg-popover shadow-xl z-50 overflow-hidden">
           <div className="flex items-center justify-between border-b px-4 py-3">
             <h3 className="text-sm font-semibold">Notifications</h3>
             {notifications.some(n => !n.isRead && n.userId !== null) && (
@@ -170,13 +170,20 @@ export default function NotificationBell() {
 
           <div className="max-h-[400px] overflow-y-auto">
             {isLoading ? (
-              <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
+              <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground gap-2">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>Loading…</span>
+              </div>
             ) : isError ? (
-              <div className="p-4 text-center text-sm text-destructive">Failed to load.</div>
+              <div className="flex flex-col items-center justify-center py-8 text-sm text-destructive gap-2">
+                <Bell className="h-6 w-6 opacity-40" />
+                <span>Failed to load notifications.</span>
+              </div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">
-                <Bell className="mx-auto mb-2 h-8 w-8 opacity-20" />
-                No notifications yet.
+              <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground gap-2">
+                <Bell className="h-8 w-8 opacity-20" />
+                <span className="font-medium">You're all caught up!</span>
+                <span className="text-xs">No new notifications.</span>
               </div>
             ) : (
               <div className="divide-y">

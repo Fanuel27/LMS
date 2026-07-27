@@ -47,9 +47,9 @@ const StudentProfilePage = React.lazy(() => import('@/pages/student/StudentProfi
 // Suspense Fallback Loader
 function PageLoader() {
   return (
-    <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4">
-      <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      <p className="text-sm text-muted-foreground animate-pulse">Loading module...</p>
+    <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+      <Loader2 className="w-7 h-7 text-primary animate-spin" />
+      <p className="text-sm text-muted-foreground">Loading&hellip;</p>
     </div>
   )
 }

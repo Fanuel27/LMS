@@ -238,32 +238,36 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── Recent Activity placeholder ────────────────────────────────────── */}
+      {/* ── Recent Activity ─────────────────────────────────────────────── */}
       <div>
-        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          Recent Activity
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            Recent Activity
+          </h2>
+          <Link
+            to="/admin/audit-logs"
+            className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
+          >
+            View all logs <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
         <Card>
           <CardContent className="p-0">
-            {[
-              { text: 'System initialised with seed data', time: 'Set-up', dot: 'bg-emerald-500' },
-              { text: 'Admin account created', time: 'Set-up', dot: 'bg-blue-500' },
-              { text: 'Subject catalogue loaded (10 subjects)', time: 'Set-up', dot: 'bg-violet-500' },
-            ].map(({ text, time, dot }) => (
-              <div
-                key={text}
-                className="flex items-center gap-4 px-5 py-3.5 border-b border-border last:border-0"
-              >
-                <div className={`w-2 h-2 rounded-full ${dot} shrink-0`} />
-                <p className="flex-1 text-sm text-foreground">{text}</p>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{time}</span>
+            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+              <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center mb-3">
+                <Activity className="w-6 h-6 text-muted-foreground" />
               </div>
-            ))}
-            <div className="px-5 py-3 text-center">
-              <p className="text-xs text-muted-foreground">
-                Full activity log will appear here as the platform is used.
+              <p className="text-sm font-medium text-foreground">Activity is being tracked</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                All platform events are recorded in the Audit Logs. Visit the logs page to view detailed activity.
               </p>
+              <Link
+                to="/admin/audit-logs"
+                className="mt-4 inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+              >
+                Open Audit Logs <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
           </CardContent>
         </Card>

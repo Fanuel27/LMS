@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 
 export default function PageHeader({ title, description, breadcrumbs = [], actions, className }) {
   return (
-    <div className={cn('mb-6', className)}>
+    <div className={cn('mb-6 pb-5 border-b border-border', className)}>
       {/* Breadcrumbs */}
       {breadcrumbs.length > 0 && (
         <nav className="flex items-center gap-1 text-xs text-muted-foreground mb-2" aria-label="Breadcrumb">
@@ -33,7 +33,7 @@ export default function PageHeader({ title, description, breadcrumbs = [], actio
       )}
 
       {/* Title row */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">{title}</h1>
           {description && (

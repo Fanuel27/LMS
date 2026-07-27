@@ -89,22 +89,12 @@ function UserDropdown({ user, onLogout }) {
 
           {/* Menu items */}
           <div className="py-1">
-            <button
-              role="menuitem"
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-              onClick={() => setOpen(false)}
+            <div
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground cursor-default"
             >
-              <User className="w-4 h-4 text-muted-foreground" />
-              Profile
-            </button>
-            <button
-              role="menuitem"
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-              onClick={() => setOpen(false)}
-            >
-              <Settings className="w-4 h-4 text-muted-foreground" />
-              Settings
-            </button>
+              <User className="w-4 h-4" />
+              <span className="truncate">{user?.fullName}</span>
+            </div>
           </div>
 
           <div className="border-t border-border py-1">

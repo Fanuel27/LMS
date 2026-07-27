@@ -112,7 +112,7 @@ export default function StudentNotesPage() {
           
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
             <select
-              className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="form-select w-auto"
               value={subjectFilter}
               onChange={(e) => {
                 setSubjectFilter(e.target.value)
@@ -132,7 +132,7 @@ export default function StudentNotesPage() {
             </select>
             
             <select
-              className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="form-select w-auto"
               value={sort}
               onChange={(e) => { setSort(e.target.value); setPage(1) }}
             >

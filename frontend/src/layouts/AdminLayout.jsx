@@ -25,7 +25,7 @@ const navItems = [
     ],
   },
   {
-    label: 'System Settings',
+    label: 'Administration',
     items: [
       { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
       { to: '/admin/contact-messages', label: 'Contact Messages', icon: MessageSquare },

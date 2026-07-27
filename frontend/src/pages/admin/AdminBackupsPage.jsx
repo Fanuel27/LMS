@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Database, Download, Upload, AlertTriangle, FileJson, CheckCircle2, XCircle } from 'lucide-react';
 import PageHeader from '@/components/admin/PageHeader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/Dialog';
+import { useToast } from '@/hooks/useToast';
+import { Toaster } from '@/components/ui/Toaster';
 
 const BREADCRUMBS = [{ label: 'Dashboard', href: '/admin/dashboard' }];
 
@@ -17,6 +19,7 @@ export default function AdminBackupsPage() {
   const [report, setReport] = useState(null);
   const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
   const fileInputRef = useRef(null);
+  const { toasts, toast } = useToast();
 
   const downloadFile = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
@@ -32,7 +35,11 @@ export default function AdminBackupsPage() {
   const createExportMutation = (exportFn, filename) => useMutation({
     mutationFn: exportFn,
     onSuccess: (data) => downloadFile(data, filename),
-    onError: (err) => alert('Export failed: ' + (err.response?.data?.message || err.message))
+    onError: (err) => toast({
+      title: 'Export failed',
+      description: err.response?.data?.message || err.message,
+      variant: 'destructive',
+    })
   });
 
   const mUsers = createExportMutation(backupService.exportUsers, 'users.csv');
@@ -49,14 +56,17 @@ export default function AdminBackupsPage() {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       downloadFile(data, `backup_${timestamp}.json`);
     },
-    onError: (err) => alert('Backup failed: ' + (err.response?.data?.message || err.message))
+    onError: (err) => toast({
+      title: 'Backup failed',
+      description: err.response?.data?.message || err.message,
+      variant: 'destructive',
+    })
   });
 
   const mRestore = useMutation({
     mutationFn: () => backupService.restoreBackup(file, mode, isDryRun),
     onSuccess: (data) => {
-      setReport(data.data || data); 
-      // the backend returns { success: true, message: ..., data: report } via sendSuccess
+      setReport(data.data || data);
     },
     onError: (err) => {
       if (err.response?.data?.report) {
@@ -64,7 +74,11 @@ export default function AdminBackupsPage() {
       } else if (err.response?.data?.errors) {
         setReport({ errors: err.response.data.errors });
       } else {
-        alert('Restore failed: ' + (err.response?.data?.message || err.message));
+        toast({
+          title: 'Restore failed',
+          description: err.response?.data?.message || err.message,
+          variant: 'destructive',
+        });
       }
     }
   });
@@ -171,8 +185,12 @@ export default function AdminBackupsPage() {
         </Card>
       </div>
 
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-4">CSV Data Exports</h3>
+      <div className="mt-6">
+        <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2">
+          <Download className="w-4 h-4 text-muted-foreground" />
+          CSV Data Exports
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">Download individual datasets as CSV files for reporting or external analysis.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {renderExportCard('Users', 'All administrators, teachers, and students.', mUsers)}
           {renderExportCard('Students', 'Only student accounts.', mStudents)}
@@ -349,6 +367,7 @@ export default function AdminBackupsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Toaster toasts={toasts} />
     </div>
   );
 }

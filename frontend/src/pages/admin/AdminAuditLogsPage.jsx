@@ -78,7 +78,7 @@ export default function AdminAuditLogsPage() {
             </form>
             <div className="flex flex-wrap gap-2">
               <select
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background md:w-[150px]"
+                className="form-select md:w-[150px]"
                 value={sort}
                 onChange={(e) => { setSort(e.target.value); setPage(1); }}
               >
@@ -87,7 +87,7 @@ export default function AdminAuditLogsPage() {
               </select>
               
               <select
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background md:w-[150px]"
+                className="form-select md:w-[150px]"
                 value={actionFilter}
                 onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
               >
@@ -98,7 +98,7 @@ export default function AdminAuditLogsPage() {
               </select>
 
               <select
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background md:w-[150px]"
+                className="form-select md:w-[150px]"
                 value={entityFilter}
                 onChange={(e) => { setEntityFilter(e.target.value); setPage(1); }}
               >

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { Shield, Eye, EyeOff, BookOpen } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-background p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Brand */}
         <div className="text-center space-y-2">
@@ -130,11 +130,6 @@ export default function AdminLoginPage() {
                 {isLoading ? 'Signing in…' : 'Sign In as Admin'}
               </Button>
             </form>
-
-            {/* Demo hint */}
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              Demo: <code className="bg-muted px-1 py-0.5 rounded">admin@example.com</code> / <code className="bg-muted px-1 py-0.5 rounded">Admin123!</code>
-            </p>
           </CardContent>
         </Card>
 
@@ -142,15 +137,15 @@ export default function AdminLoginPage() {
         <div className="text-center text-sm text-muted-foreground space-y-1">
           <p>
             Teacher?{' '}
-            <a href="/teacher/login" className="text-primary hover:underline font-medium">
+            <Link to="/teacher/login" className="text-primary hover:underline font-medium">
               Sign in here
-            </a>
+            </Link>
           </p>
           <p>
             Student?{' '}
-            <a href="/student/login" className="text-primary hover:underline font-medium">
+            <Link to="/student/login" className="text-primary hover:underline font-medium">
               Sign in here
-            </a>
+            </Link>
           </p>
         </div>
       </div>

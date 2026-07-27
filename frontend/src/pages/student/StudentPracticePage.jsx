@@ -262,7 +262,7 @@ export default function StudentPracticePage() {
               <div className="space-y-3">
                 <Label>Select Subject</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="form-select"
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                 >
@@ -277,7 +277,7 @@ export default function StudentPracticePage() {
                 <div className="space-y-3">
                   <Label>Practice Mode</Label>
                   <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="form-select"
                     value={practiceMode}
                     onChange={(e) => setPracticeMode(e.target.value)}
                   >
@@ -288,7 +288,7 @@ export default function StudentPracticePage() {
                 <div className="space-y-3">
                   <Label>Number of Questions</Label>
                   <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="form-select"
                     value={questionLimit}
                     onChange={(e) => setQuestionLimit(Number(e.target.value))}
                   >

@@ -56,6 +56,14 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Text selection color */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.15);
+    color: hsl(var(--foreground));
   }
 }
 
@@ -64,17 +72,53 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
+/* Global custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--muted-foreground) / 0.25);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--muted-foreground) / 0.45);
 }
+
+/* Custom scrollbar utility for overflow containers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* Print: hide navigations */
+@media print {
+  aside, nav, header, .no-print {
+    display: none !important;
+  }
+}
+
+/* Consistent select / native input styling */
+.form-select {
+  @apply flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm
+         ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
+         disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Consistent textarea styling */
+textarea.form-textarea {
+  @apply flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm
+         ring-offset-background placeholder:text-muted-foreground
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+         disabled:cursor-not-allowed disabled:opacity-50;
+}
+

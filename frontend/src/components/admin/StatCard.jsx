@@ -24,8 +24,8 @@ export default function StatCard({
   return (
     <div
       className={cn(
-        'relative bg-card border border-border rounded-xl p-5 flex items-start justify-between gap-4 shadow-sm',
-        onClick && 'cursor-pointer hover:shadow-md hover:-translate-y-px transition-all duration-150'
+        'relative bg-card border border-border rounded-xl p-5 flex items-start justify-between gap-4 shadow-sm transition-all duration-200',
+        onClick && 'cursor-pointer hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5'
       )}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -33,14 +33,14 @@ export default function StatCard({
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
           {title}
         </p>
 
         {isLoading ? (
-          <div className="mt-2 h-8 w-20 bg-muted animate-pulse rounded" />
+          <div className="mt-2 h-9 w-20 bg-muted animate-pulse rounded-lg" />
         ) : (
-          <p className="mt-1 text-3xl font-bold text-foreground tabular-nums">
+          <p className="mt-1.5 text-3xl font-bold text-foreground tabular-nums tracking-tight">
             {value?.toLocaleString() ?? '—'}
           </p>
         )}

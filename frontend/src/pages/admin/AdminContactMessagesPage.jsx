@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { Search, Mail, MailOpen, Trash2, Eye } from 'lucide-react';
+import { Search, Mail, MailOpen, Trash2, Eye, MessageSquare } from 'lucide-react';
 import PageHeader from '@/components/admin/PageHeader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/Dialog';
 import { useToast } from '@/hooks/useToast';
 import { Toaster } from '@/components/ui/Toaster';
+import ErrorBanner from '@/components/admin/ErrorBanner';
+import { TableSkeleton } from '@/components/admin/LoadingSkeleton';
 
 const BREADCRUMBS = [{ label: 'Dashboard', href: '/admin/dashboard' }];
 
@@ -73,17 +75,20 @@ export default function AdminContactMessagesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      <div className="flex justify-between items-start">
-        <PageHeader
-          title="Contact Messages"
-          description="Manage inquiries and messages submitted via the public landing page."
-          breadcrumbs={BREADCRUMBS}
-        />
-        <Badge variant={unreadCount > 0 ? "default" : "outline"} className="px-3 py-1 text-sm flex items-center gap-2">
-          <Mail className="w-4 h-4" />
-          {unreadCount} Unread Messages
-        </Badge>
-      </div>
+      <PageHeader
+        title="Contact Messages"
+        description="Manage inquiries and messages submitted via the public landing page."
+        breadcrumbs={BREADCRUMBS}
+        actions={
+          <Badge
+            variant={unreadCount > 0 ? 'default' : 'outline'}
+            className="px-3 py-1 text-sm flex items-center gap-1.5"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            {unreadCount} Unread
+          </Badge>
+        }
+      />
 
       <Card>
         <CardHeader className="pb-3 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -98,7 +103,7 @@ export default function AdminContactMessagesPage() {
               />
             </div>
             <select
-              className="flex h-10 w-full sm:w-48 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="form-select sm:w-48"
               value={status}
               onChange={(e) => { setStatus(e.target.value); setPage(1); }}
             >
@@ -110,15 +115,16 @@ export default function AdminContactMessagesPage() {
         </CardHeader>
         <CardContent className="pt-6">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Loading messages...</p>
+            <div className="p-6"><TableSkeleton rows={5} cols={5} /></div>
           ) : isError ? (
-            <p className="text-sm text-red-500 text-center py-6">Failed to load contact messages.</p>
+            <div className="p-6"><ErrorBanner message="Failed to load contact messages. Please try again." /></div>
           ) : data?.data?.messages?.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
-                <Mail className="w-6 h-6 text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 bg-muted/70 rounded-2xl flex items-center justify-center mb-5">
+                <MessageSquare className="w-8 h-8 text-muted-foreground/70" />
               </div>
-              <p className="text-sm text-muted-foreground font-medium">No contact messages found.</p>
+              <p className="text-sm font-semibold text-foreground">No messages found</p>
+              <p className="text-xs text-muted-foreground mt-1.5">Contact messages submitted from the landing page will appear here.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

@@ -315,7 +315,7 @@ export default function StudentExamsPage() {
                 />
               </div>
               <select
-                className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="form-select"
                 value={subjectFilter}
                 onChange={(e) => {
                   setSubjectFilter(e.target.value)

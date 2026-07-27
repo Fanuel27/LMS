@@ -27,7 +27,7 @@ const navGroups = [
   {
     label: 'Assessments',
     items: [
-      { to: '/student/practice', label: 'Practice mode', icon: BookOpen },
+      { to: '/student/practice', label: 'Practice Mode', icon: BookOpen },
       { to: '/student/exams', label: 'Mock Exams', icon: ClipboardList },
     ],
   },
@@ -97,20 +97,11 @@ function UserDropdown({ user, onLogout }) {
             <Link
               to="/student/profile"
               role="menuitem"
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
               onClick={() => setOpen(false)}
             >
               <User className="w-4 h-4 text-muted-foreground" />
-              Profile
-            </Link>
-            <Link
-              to="/student/profile"
-              role="menuitem"
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-              onClick={() => setOpen(false)}
-            >
-              <Settings className="w-4 h-4 text-muted-foreground" />
-              Settings
+              My Profile
             </Link>
           </div>
 
